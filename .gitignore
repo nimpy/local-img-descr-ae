@@ -1,0 +1,7 @@
+
+.idea/
+__pycache__/
+.ipynb_checkpoints/
+zimnica/
+images/
+weights/
