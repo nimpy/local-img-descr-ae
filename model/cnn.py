@@ -13,7 +13,7 @@ class Net(nn.Module):
     on the input step-by-step in the forward function. You can use torch.nn.functional to apply functions
 
     such as F.relu, F.sigmoid, F.softmax, F.max_pool2d. Be careful to ensure your dimensions are correct after each
-    step. You are encouraged to have a look at the network in pytorch/nlp/model/net.py to get a better sense of how
+    step. You are encouraged to have a look at the network in pytorch/nlp/model/cnn.py to get a better sense of how
     you can go about defining your own network.
 
     The documentation for all the various components available o you is here: http://pytorch.org/docs/master/nn.html

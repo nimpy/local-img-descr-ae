@@ -11,7 +11,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 
 import utils
-import model.net as net
+import model.cnn as net
 import model.data_loader as data_loader
 from evaluate import evaluate
 
@@ -196,3 +196,5 @@ if __name__ == '__main__':
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
                        args.restore_file)
+
+
