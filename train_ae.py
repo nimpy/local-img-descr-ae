@@ -9,6 +9,8 @@ import torch
 import torch.optim as optim
 from torch.autograd import Variable
 from tqdm import tqdm
+import datetime
+from pathlib import Path
 
 import sys
 sys.path.append('/scratch/cloned_repositories/torch-summary')
@@ -24,6 +26,8 @@ parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready
                     help="Directory containing the dataset")
 parser.add_argument('--model_dir', default='model/',
                     help="Directory containing params.json")
+parser.add_argument('--weights_dir', default='/scratch/image_datasets/3_65x65/ready/weights',
+                    help="Directory where weights will be saved")
 parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before \
                     training")  # 'best' or 'train'
@@ -95,7 +99,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
 
 
 def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params, model_dir,
-                       restore_file=None):
+                       weights_dir, restore_file=None):
     """Train the model and evaluate every epoch.
 
     Args:
@@ -106,7 +110,8 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         loss_fn: a function that takes batch_output and batch_labels and computes the loss for the batch
         metrics: (dict) a dictionary of functions that compute a metric using the output and labels of each batch
         params: (Params) hyperparameters
-        model_dir: (string) directory containing config, weights and log
+        model_dir: (string) directory containing config and log
+        weights_dir: (string) directory containing weights
         restore_file: (string) optional- name of file to restore from (without its extension .pth.tar)
     """
     # reload weights from restore_file if specified
@@ -136,7 +141,7 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
                                'state_dict': model.state_dict(),
                                'optim_dict': optimizer.state_dict()},
                               is_best=is_best,
-                              checkpoint=model_dir)
+                              checkpoint=weights_dir)
 
         # If best_eval, best_save_path
         if is_best:
@@ -145,12 +150,12 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
 
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
-                model_dir, "metrics_val_best_weights.json")
+                weights_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
 
         # Save latest val metrics in a json file in the model directory
         last_json_path = os.path.join(
-            model_dir, "metrics_val_last_weights.json")
+            weights_dir, "metrics_val_last_weights.json")
         utils.save_dict_to_json(val_metrics, last_json_path)
 
 
@@ -171,8 +176,11 @@ if __name__ == '__main__':
     if params.cuda:
         torch.cuda.manual_seed(230)
 
+    weights_dir = os.path.join(args.weights_dir, "ae_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    Path(weights_dir).mkdir(parents=True, exist_ok=True)
+
     # Set the logger
-    utils.set_logger(os.path.join(args.model_dir, 'train.log'))
+    utils.set_logger(os.path.join(weights_dir, 'train_ae.log'))
 
     # Create the input data pipeline
     logging.info("Loading the datasets...")
@@ -198,4 +206,4 @@ if __name__ == '__main__':
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
-                       args.restore_file)
+                       weights_dir, args.restore_file)
