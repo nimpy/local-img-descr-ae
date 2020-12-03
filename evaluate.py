@@ -39,25 +39,24 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
     summ = []
 
     # compute metrics over the dataset
-    for data_batch, labels_batch in dataloader:
+    for data_batch in dataloader:
 
         # move to GPU if available
         if params.cuda:
-            data_batch, labels_batch = data_batch.cuda(
-                non_blocking=True), labels_batch.cuda(non_blocking=True)
+            data_batch = data_batch.cuda(non_blocking=True)
         # fetch the next evaluation batch
-        data_batch, labels_batch = Variable(data_batch), Variable(labels_batch)
+        data_batch = Variable(data_batch)
 
         # compute model output
         output_batch = model(data_batch)
-        loss = loss_fn(output_batch, labels_batch)
+        loss = loss_fn(output_batch, data_batch)
 
         # extract data from torch Variable, move to cpu, convert to numpy arrays
         output_batch = output_batch.data.cpu().numpy()
-        labels_batch = labels_batch.data.cpu().numpy()
+        data_batch = data_batch.data.cpu().numpy()
 
         # compute all metrics on this batch
-        summary_batch = {metric: metrics[metric](output_batch, labels_batch)
+        summary_batch = {metric: metrics[metric](output_batch, data_batch)
                          for metric in metrics}
         summary_batch['loss'] = loss.item()
         summ.append(summary_batch)
