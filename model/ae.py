@@ -106,6 +106,7 @@ def accuracy(outputs, inputs):
 
     return 0
 
+
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
     'accuracy': accuracy,
