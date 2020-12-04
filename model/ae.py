@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import numpy as np
+import pdb
 
 # define the NN architecture
 class ConvAutoencoder(nn.Module):
@@ -24,7 +25,6 @@ class ConvAutoencoder(nn.Module):
         # pooling layer to reduce x-y dims by two; kernel and stride of 2
         self.pool3 = nn.MaxPool2d(2, 2)
 
-
         ## decoder layers ##
         ## a kernel of 2 and a stride of 2 will increase the spatial dims by 2
         self.t_conv1 = nn.ConvTranspose2d(32, 32, 2, stride=2)
@@ -43,6 +43,8 @@ class ConvAutoencoder(nn.Module):
         # add third hidden layer
         x = F.elu(self.conv3(self.zeropad3(x)))
         x = self.pool3(x)  # compressed representation
+
+        # pdb.set_trace()
 
         ## decode ##
         # add transpose conv layers, with eelu activation function
@@ -74,9 +76,24 @@ class ConvAutoencoder(nn.Module):
 
 loss_fn = nn.BCELoss()
 
-def accuracy(outputs, labels):
+def rmse(outputs, inputs):
     """
-    Compute the accuracy, given the outputs and labels for all images.
+    Compute the MSE, given the output and input images.
+
+    Args:
+        outputs: (np.ndarray) dimension batch_size x image shape
+        inputs:  (np.ndarray) dimension batch_size x image shape
+
+    Returns: (float) root MSE
+    """
+    return torch.sqrt(torch.mean(torch.pow(torch.sub(outputs, inputs), 2)))
+
+    # return np.sqrt(np.mean(np.subtract(outputs, inputs, dtype=float)**2))
+
+
+def accuracy(outputs, inputs):
+    """
+    Return 0, because I haven't implemented it yet
 
     Args:
         outputs: (np.ndarray) dimension batch_size x 6 - log softmax output of the model
