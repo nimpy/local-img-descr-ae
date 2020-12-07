@@ -44,8 +44,7 @@ dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
 test_dl = dataloaders['test']
 
 counter = 0
-batch_rmse_cum = 0
-all_cum = 0
+mse_cum = 0
 
 for data_batch in test_dl:
 
@@ -65,23 +64,15 @@ for data_batch in test_dl:
     # plt.imshow(output_batch[0][0], cmap='gray')
     # plt.show()
 
-    # counter += 1
+    counter += data_batch.shape[0]
     # if counter > 10:
     #     break
 
-    temp_cum = 0
     for i in range(output_batch.shape[0]):
-        temp = np.mean(np.subtract(data_batch[i], output_batch[i], dtype=float) ** 2)# * 255.0
+        mse = np.mean(np.subtract(data_batch[i], output_batch[i], dtype=float) ** 2)# * 255.0
         # print('      ', temp)
-        temp_cum += temp
-        all_cum += temp
-    print(temp_cum / output_batch.shape[0])
+        mse_cum += mse
 
-    batch_rmse = np.mean(np.subtract(data_batch, output_batch, dtype=float)**2)# * 255.0
-    print(batch_rmse)
+mse_average = mse_cum / counter
+print(mse_average)  # which is actually just MSE xD
 
-    batch_rmse_cum += batch_rmse
-
-print()
-print(batch_rmse_cum / 390.625)
-print(all_cum / 12500.)
