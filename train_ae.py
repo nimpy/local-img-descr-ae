@@ -5,6 +5,7 @@ import logging
 import os
 
 import numpy as np
+import math
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
@@ -12,6 +13,7 @@ from tqdm import tqdm
 import datetime
 from pathlib import Path
 import pdb
+
 
 import sys
 sys.path.append('/scratch/cloned_repositories/torch-summary')
@@ -124,7 +126,7 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         logging.info("Restoring parameters from {}".format(restore_path))
         utils.load_checkpoint(restore_path, model, optimizer)
 
-    best_val_acc = 0.0
+    best_val_loss = math.inf  # might need to change (to 0.0) if changing the metric
 
     for epoch in range(params.num_epochs):
         # Run one epoch
@@ -136,8 +138,8 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         # Evaluate for one epoch on validation set
         val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
 
-        val_acc = val_metrics['loss']
-        is_best = val_acc >= best_val_acc
+        val_loss = val_metrics['loss']
+        is_best = val_loss <= best_val_loss  # might need to change (to >=) if changing the metric
 
         # Save weights
         utils.save_checkpoint({'epoch': epoch + 1,
@@ -148,8 +150,8 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
 
         # If best_eval, best_save_path
         if is_best:
-            logging.info("- Found new best accuracy")
-            best_val_acc = val_acc
+            logging.info("- Found new best loss")
+            best_val_loss = val_loss
 
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
