@@ -76,7 +76,7 @@ class ConvAutoencoder(nn.Module):
 
 loss_fn = nn.BCELoss()
 
-def rmse(outputs, inputs):
+def mse(outputs, inputs):
     """
     Compute the MSE, given the output and input images.
 
@@ -86,8 +86,8 @@ def rmse(outputs, inputs):
 
     Returns: (float) root MSE
     """
-    rmse = torch.sqrt(torch.mean(torch.pow(torch.sub(outputs, inputs), 2)))
-    return rmse.cpu().detach().numpy()
+    mse = torch.mean(torch.pow(torch.sub(outputs, inputs), 2))
+    return mse.cpu().detach().numpy()
 
     # return np.sqrt(np.mean(np.subtract(outputs, inputs, dtype=float)**2))
 
@@ -111,7 +111,7 @@ def accuracy(outputs, inputs):
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
     # 'accuracy': accuracy,
-    'rmse': rmse,
+    'mse': mse,
     # could add more metrics such as accuracy for each token type
 }
 
