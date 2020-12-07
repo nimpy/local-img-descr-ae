@@ -11,6 +11,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
 from pathlib import Path
+import pdb
 
 import sys
 sys.path.append('/scratch/cloned_repositories/torch-summary')
@@ -76,7 +77,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
             # Evaluate summaries only once in a while
             if i % params.save_summary_steps == 0:
                 # extract data from torch Variable, move to cpu, convert to numpy arrays
-                output_batch = output_batch.data.cpu().numpy()
+                # output_batch = output_batch.data.cpu().numpy()
 
                 # compute all metrics on this batch
                 summary_batch = {metric: metrics[metric](output_batch, train_batch)
@@ -89,6 +90,8 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
 
             t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
             t.update()
+
+    # pdb.set_trace()
 
     # compute mean of all metrics in summary
     metrics_mean = {metric: np.mean([x[metric]

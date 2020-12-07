@@ -86,7 +86,8 @@ def rmse(outputs, inputs):
 
     Returns: (float) root MSE
     """
-    return torch.sqrt(torch.mean(torch.pow(torch.sub(outputs, inputs), 2)))
+    rmse = torch.sqrt(torch.mean(torch.pow(torch.sub(outputs, inputs), 2)))
+    return rmse.cpu().detach().numpy()
 
     # return np.sqrt(np.mean(np.subtract(outputs, inputs, dtype=float)**2))
 
@@ -109,7 +110,8 @@ def accuracy(outputs, inputs):
 
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
-    'accuracy': accuracy,
+    # 'accuracy': accuracy,
+    'rmse': rmse,
     # could add more metrics such as accuracy for each token type
 }
 
