@@ -48,8 +48,8 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
         data_batch = Variable(data_batch)
 
         # compute model output
-        output_batch = model(data_batch)
-        loss = loss_fn(output_batch, data_batch)
+        output_batch, mu, logvar = model(data_batch)
+        loss = loss_fn(output_batch, data_batch, mu, logvar)
 
         # extract data from torch Variable, move to cpu, convert to numpy arrays
         # output_batch = output_batch.data.cpu().numpy()

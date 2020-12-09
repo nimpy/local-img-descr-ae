@@ -11,6 +11,7 @@ from torch.autograd import Variable
 
 import model.data_loader as data_loader
 from model.ae import ConvAutoencoder
+from model.vae import BetaVAE
 import utils
 
 parser = argparse.ArgumentParser()
@@ -26,11 +27,11 @@ parser.add_argument('--restore_file', default=None,
 
 
 args = parser.parse_args()
-weights_path = os.path.join(args.weights_dir, 'ae_20201207_143916/best.pth.tar')
+weights_path = os.path.join(args.weights_dir, 'vae_20201208_172129/best.pth.tar')
 # data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
-model = ConvAutoencoder()
+model = BetaVAE(128)#ConvAutoencoder()
 model.load_state_dict(torch.load(weights_path)['state_dict'])
 model.eval()
 
@@ -45,6 +46,7 @@ test_dl = dataloaders['test']
 
 counter = 0
 mse_cum = 0
+counter_vis = 0
 
 for data_batch in test_dl:
 
@@ -54,19 +56,20 @@ for data_batch in test_dl:
     data_batch = Variable(data_batch)
 
     # compute model output
-    output_batch = model(data_batch)
+    output_batch, _, _ = model(data_batch)
 
     data_batch = data_batch.cpu().numpy()
-    # plt.imshow(data_batch[0][0], cmap='gray')
-    # plt.show()
+    plt.imshow(data_batch[0][0], cmap='gray')
+    plt.show()
 
     output_batch = output_batch.detach().cpu().numpy()
-    # plt.imshow(output_batch[0][0], cmap='gray')
-    # plt.show()
+    plt.imshow(output_batch[0][0], cmap='gray')
+    plt.show()
 
     counter += data_batch.shape[0]
-    # if counter > 10:
-    #     break
+    counter_vis += 1
+    if counter_vis > 10:
+        break
 
     for i in range(output_batch.shape[0]):
         mse = np.mean(np.subtract(data_batch[i], output_batch[i], dtype=float) ** 2)# * 255.0
