@@ -20,7 +20,7 @@ sys.path.append('/scratch/cloned_repositories/torch-summary')
 from torchsummary import summary
 
 import utils
-import model.vae as vae
+import model.vae2 as vae
 import model.data_loader as data_loader
 from evaluate import evaluate
 
@@ -201,8 +201,8 @@ if __name__ == '__main__':
 
     # Define the model and optimizer
     model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
-    print(model)
-    # summary(model, (1, 64, 64))
+    # print(model)
+    summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
     # fetch loss function and metrics

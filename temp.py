@@ -11,7 +11,7 @@ from torch.autograd import Variable
 
 import model.data_loader as data_loader
 from model.ae import ConvAutoencoder
-from model.vae import BetaVAE
+from model.vae2 import BetaVAE
 import utils
 
 parser = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ parser.add_argument('--restore_file', default=None,
 
 
 args = parser.parse_args()
-weights_path = os.path.join(args.weights_dir, 'vae_20201208_172129/best.pth.tar')
+weights_path = os.path.join(args.weights_dir, 'vae_20201210_180318/best.pth.tar')
 # data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
