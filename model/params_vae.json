@@ -6,5 +6,6 @@
     "num_channels": 32,
     "save_summary_steps": 100,
     "num_workers": 4,
-    "latent_size": 128
+    "latent_size": 128,
+    "beta": 0.1
 }

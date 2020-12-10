@@ -200,7 +200,7 @@ if __name__ == '__main__':
     logging.info("- done.")
 
     # Define the model and optimizer
-    model = vae.BetaVAE(latent_size=params.latent_size).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size)
+    model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
     print(model)
     # summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)

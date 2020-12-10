@@ -85,6 +85,8 @@ class BetaVAE(nn.Module):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         kl_diverge = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
+        # print(self.beta, recon_loss.item() / x.shape[0], (self.beta * kl_diverge.item()) / x.shape[0])
+
         return (recon_loss + self.beta * kl_diverge) / x.shape[0]  # divide total loss by batch size
 
     # def save_model(self, file_path, num_to_keep=1):
