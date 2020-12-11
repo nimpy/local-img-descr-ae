@@ -20,7 +20,6 @@ sys.path.append('/scratch/cloned_repositories/torch-summary')
 from torchsummary import summary
 
 import wandb
-wandb.login()
 
 import utils
 import model.vae2 as vae
@@ -105,10 +104,11 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
     metrics_string = " ; ".join("{}: {:05.3f}".format(k, v)
                                 for k, v in metrics_mean.items())
     logging.info("- Train metrics: " + metrics_string)
-    return metrics_mean['loss']
+    return metrics_mean
+
 
 def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params, model_dir,
-                       weights_dir, restore_file=None):
+                       weights_dir, restore_file=None, log_as_wandb_run=True):
     """Train the model and evaluate every epoch.
 
     Args:
@@ -137,12 +137,14 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         logging.info("Epoch {}/{}".format(epoch + 1, params.num_epochs))
 
         # compute number of batches in one epoch (one full pass over the training set)
-        train_loss = train(model, optimizer, loss_fn, train_dataloader, metrics, params)
+        train_metrics = train(model, optimizer, loss_fn, train_dataloader, metrics, params)
+        train_loss, train_mse = train_metrics['loss'], train_metrics['mse']
 
         # Evaluate for one epoch on validation set
         val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
 
         val_loss = val_metrics['loss']
+        val_mse = val_metrics['mse']
         is_best = val_loss <= best_val_loss  # might need to change (to >=) if changing the metric
 
         # Save weights
@@ -167,7 +169,8 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
             weights_dir, "metrics_val_last_weights.json")
         utils.save_dict_to_json(val_metrics, last_json_path)
 
-        wandb.log({"loss": train_loss, "val_loss": val_loss})
+        if log_as_wandb_run:
+            wandb.log({"loss": train_loss, "val_loss": val_loss, "mse": train_mse, "val_mse": val_mse})
 
 
 if __name__ == '__main__':
@@ -204,7 +207,7 @@ if __name__ == '__main__':
 
     logging.info("- done.")
 
-    wandb.init(project="vae-descr", config=params)
+    params.beta = params.beta_norm * 32  # 32 = input size / latent size; TODO generalise it
 
     # Define the model and optimizer
     model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
@@ -212,13 +215,21 @@ if __name__ == '__main__':
     summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
-    wandb.watch(model)
+    log_as_wandb_run = True
+
+    if log_as_wandb_run:
+        wandb.login()
+        wandb_run = wandb.init(project="vae-descr", config=params)
+        wandb.watch(model)
 
     # fetch loss function and metrics
     loss_fn = model.loss
-    metrics = {}  # TODO
+    metrics = vae.metrics  # TODO check if correct
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
-                       weights_dir, args.restore_file)
+                       weights_dir, args.restore_file, log_as_wandb_run)
+
+    if log_as_wandb_run:
+        wandb_run.finish()
