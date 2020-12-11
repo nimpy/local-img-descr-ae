@@ -4,3 +4,4 @@ tabulate
 tqdm
 matplotlib
 ipykernel
+wandb

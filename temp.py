@@ -27,7 +27,7 @@ parser.add_argument('--restore_file', default=None,
 
 
 args = parser.parse_args()
-weights_path = os.path.join(args.weights_dir, 'vae_20201210_180318/best.pth.tar')
+weights_path = os.path.join(args.weights_dir, 'vae_20201211_113139/best.pth.tar')
 # data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
