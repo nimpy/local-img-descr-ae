@@ -49,6 +49,38 @@ class BetaVAE(nn.Module):
         #
         # self.fc_z = nn.Linear(latent_size, 256)
 
+
+    def encode(self, x):
+        x = F.elu(self.conv1(self.zeropad1(x)))
+        x = self.pool1(x)
+        x = F.elu(self.conv2(self.zeropad2(x)))
+        x = self.pool2(x)
+        x = F.elu(self.conv3(self.zeropad3(x)))
+        x = self.pool3(x)  # compressed representation
+
+        x = x.view(-1, 2048)
+
+        mu = self.fc_mu(x)
+        logvar = self.fc_var(x)
+
+        # sample
+        std = torch.exp(0.5 * logvar)  # e^(1/2 * log(std^2))
+        eps = torch.randn_like(std)  # random ~ N(0, 1)
+        z = eps.mul(std).add_(mu)
+
+        return z, mu, logvar
+
+
+    def decode(self, z):
+        z = self.fc_z(z)
+        z = z.view(-1, 32, 8, 8)
+
+        rx = F.elu(self.t_conv1(z))
+        rx = F.elu(self.t_conv2(rx))
+        rx = torch.sigmoid(self.t_conv3(rx))
+
+        return rx
+
     def forward(self, x):
 
         x = F.elu(self.conv1(self.zeropad1(x)))
