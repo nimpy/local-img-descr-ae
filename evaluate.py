@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import utils
-import model.cnn as net
 import model.data_loader as data_loader
 
 parser = argparse.ArgumentParser()
@@ -102,7 +101,7 @@ if __name__ == '__main__':
     logging.info("- done.")
 
     # Define the model
-    model = net.Net(params).cuda() if params.cuda else net.Net(params)
+    model = net.Net(params).cuda() if params.cuda else net.Net(params)  # TODO: change to the relevant model (AE/VAE)
 
     loss_fn = net.loss_fn
     metrics = net.metrics
