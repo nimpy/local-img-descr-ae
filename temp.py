@@ -15,7 +15,7 @@ from torch.autograd import Variable
 
 import model.data_loader as data_loader
 from model.ae import ConvAutoencoder
-from model.vae2 import BetaVAE
+from model.vae import BetaVAE
 import utils
 
 torch.manual_seed(42)

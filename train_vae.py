@@ -22,7 +22,7 @@ from torchsummary import summary
 import wandb
 
 import utils
-import model.vae2 as vae
+import model.vae as vae
 import model.data_loader as data_loader
 from evaluate import evaluate
 

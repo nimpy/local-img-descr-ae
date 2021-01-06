@@ -22,7 +22,7 @@ from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
 
-import model.vae2 as vae
+import model.vae as vae
 import model.data_loader as data_loader
 from model.data_loader import eval_transformer
 import utils
