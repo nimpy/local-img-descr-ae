@@ -56,11 +56,12 @@ class ConvAutoencoder(nn.Module):
 
         return x
 
-
+    # managed to get these two to give the same result!
+    loss2 = nn.BCELoss()
     def loss(self, recon_x, x):
         # reconstruction losses are summed over all elements and batch
-        recon_loss = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        return (recon_loss) / x.shape[0]  # divide total loss by batch size
+        recon_loss = F.binary_cross_entropy(recon_x, x)#, reduction='sum')
+        return (recon_loss)# / x.shape[0]  # divide total loss by batch size
 
 
 # def loss_fn(outputs, labels):
@@ -80,7 +81,7 @@ class ConvAutoencoder(nn.Module):
 #     num_examples = outputs.size()[0]
 #     return -torch.sum(outputs[range(num_examples), labels])/num_examples
 
-loss_fn = nn.BCELoss()
+# loss_fn = nn.BCELoss()
 
 def mse(outputs, inputs):
     """

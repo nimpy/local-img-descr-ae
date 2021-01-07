@@ -114,7 +114,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
 
 
 def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params, model_dir,
-                       weights_dir, restore_file=None, log_as_wandb_run=True):
+                       weights_dir, restore_file=None, use_wandb=True):
     """Train the model and evaluate every epoch.
 
     Args:
@@ -175,7 +175,7 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
             weights_dir, "metrics_val_last_weights.json")
         utils.save_dict_to_json(val_metrics, last_json_path)
 
-        if log_as_wandb_run:
+        if use_wandb:
             wandb.log({"loss": train_loss, "val_loss": val_loss, "mse": train_mse, "val_mse": val_mse})
 
 
@@ -223,14 +223,14 @@ if __name__ == '__main__':
         model = ae.ConvAutoencoder().cuda() if params.cuda else ae.ConvAutoencoder()
 
     # print(model)
-    summary(model, (1, 65, 65))  # TODO or should it be 64?
+    summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
-    log_as_wandb_run = False  # TODO rename to use_wandb
+    use_wandb = False
 
-    if log_as_wandb_run:
+    if use_wandb:
         wandb.login()
-        wandb_run = wandb.init(project="vae-descr", config=params)
+        wandb_run = wandb.init(project="vae-descr", config=params)  # TODO wandb project name should be a parameter
         wandb.watch(model)
 
     # fetch loss function and metrics
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
-                       weights_dir, args.restore_file, log_as_wandb_run)
+                       weights_dir, args.restore_file, use_wandb)
 
-    if log_as_wandb_run:
+    if use_wandb:
         wandb_run.finish()
