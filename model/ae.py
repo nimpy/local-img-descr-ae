@@ -57,6 +57,12 @@ class ConvAutoencoder(nn.Module):
         return x
 
 
+    def loss(self, recon_x, x):
+        # reconstruction losses are summed over all elements and batch
+        recon_loss = F.binary_cross_entropy(recon_x, x, reduction='sum')
+        return (recon_loss) / x.shape[0]  # divide total loss by batch size
+
+
 # def loss_fn(outputs, labels):
 #     """
 #     Compute the cross entropy loss given outputs and labels.
