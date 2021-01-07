@@ -199,7 +199,7 @@ if __name__ == '__main__':
     logging.info("- done.")
 
     # Define the model and optimizer
-    model = ae.ConvAutoencoder().cuda() if params.cuda else ae.ConvAutoencoder()
+    model = ae.AE().cuda() if params.cuda else ae.AE()
     # print(model)
     summary(model, (1, 65, 65))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)

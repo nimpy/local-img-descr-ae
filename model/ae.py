@@ -4,10 +4,10 @@ import torch
 import pdb
 
 
-class ConvAutoencoder(nn.Module):
+class AE(nn.Module):
     def __init__(self):
-        super(ConvAutoencoder, self).__init__()
-        ## encoder layers ##
+        super(AE, self).__init__()
+        # encoder layers
         self.zeropad1 = nn.ZeroPad2d(1)
         self.conv1 = nn.Conv2d(1, 32, 3, padding=0)
         self.pool1 = nn.MaxPool2d(2, 2)
@@ -18,27 +18,30 @@ class ConvAutoencoder(nn.Module):
         self.conv3 = nn.Conv2d(32, 32, 3, padding=0)
         self.pool3 = nn.MaxPool2d(2, 2)
 
-        ## decoder layers ##
+        # decoder layers
         self.t_conv1 = nn.ConvTranspose2d(32, 32, 2, stride=2)
         self.t_conv2 = nn.ConvTranspose2d(32, 32, 2, stride=2)
         self.t_conv3 = nn.ConvTranspose2d(32, 1, 2, stride=2)
 
-    def forward(self, x):
-        ## encode ##
+    def encode(self, x):
         x = F.elu(self.conv1(self.zeropad1(x)))
         x = self.pool1(x)
         x = F.elu(self.conv2(self.zeropad2(x)))
         x = self.pool2(x)
         x = F.elu(self.conv3(self.zeropad3(x)))
         x = self.pool3(x)
+        return x
 
-        # pdb.set_trace()
-
-        ## decode ##
+    def decode(self, x):
         x = F.elu(self.t_conv1(x))
         x = F.elu(self.t_conv2(x))
         x = torch.sigmoid(self.t_conv3(x))
+        return x
 
+    def forward(self, x):
+        x = self.encode(x)
+        # pdb.set_trace()
+        x = self.decode(x)
         return x
 
     loss = nn.BCELoss()

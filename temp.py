@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 
 import model.data_loader as data_loader
-from model.ae import ConvAutoencoder
+from model.ae import AE
 from model.vae import BetaVAE
 import utils
 
@@ -38,7 +38,7 @@ weights_path = os.path.join(args.weights_dir, 'vae_20201211_151545/best.pth.tar'
 # data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
-model = BetaVAE(128)#ConvAutoencoder()
+model = BetaVAE(128)#AE()
 model.load_state_dict(torch.load(weights_path)['state_dict'])
 model.eval()
 

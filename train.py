@@ -221,7 +221,7 @@ if __name__ == '__main__':
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
         model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
     else:
-        model = ae.ConvAutoencoder().cuda() if params.cuda else ae.ConvAutoencoder()
+        model = ae.AE().cuda() if params.cuda else ae.AE()
 
     # print(model)
     summary(model, (1, 64, 64))
