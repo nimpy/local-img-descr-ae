@@ -26,6 +26,7 @@ import model.ae as ae
 import model.vae as vae
 import model.data_loader as data_loader
 from evaluate import evaluate
+from model.metrics import metrics
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
@@ -235,10 +236,10 @@ if __name__ == '__main__':
 
     # fetch loss function and metrics
     loss_fn = model.loss
-    if params.variational:  # TODO make one statement like: model.metrics (refactor AE and VAE classes)
-        metrics = vae.metrics  # TODO check if correct
-    else:
-        metrics = ae.metrics  # TODO check if correct
+    # if params.variational:  # TODO make one statement like: model.metrics (refactor AE and VAE classes)
+    #     metrics = vae.metrics  # TODO check if correct
+    # else:
+    #     metrics = ae.metrics  # TODO check if correct
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
