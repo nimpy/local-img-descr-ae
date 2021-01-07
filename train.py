@@ -12,8 +12,6 @@ from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
 from pathlib import Path
-import pdb
-
 
 import sys
 sys.path.append('/scratch/cloned_repositories/torch-summary')
@@ -24,9 +22,9 @@ import wandb
 import utils
 import model.ae as ae
 import model.vae as vae
-import model.data_loader as data_loader
+import data_loader as data_loader
 from evaluate import evaluate
-from model.metrics import metrics
+from metrics import metrics
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',

@@ -1,18 +1,13 @@
 import numpy as np
-import imageio
 import PIL
 import os
 import argparse
-import matplotlib.pyplot as plt
 import sys
 
-import pdb
 import pickle
 import datetime
 
 import torch
-from torch.utils.data import Dataset, DataLoader
-from torch.autograd import Variable
 import torchvision.transforms as transforms
 
 # sys.path.append('/scratch/cloned_repositories/torch-summary')
@@ -23,9 +18,6 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
 
 import model.vae as vae
-import model.data_loader as data_loader
-from model.data_loader import eval_transformer
-import utils
 
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)

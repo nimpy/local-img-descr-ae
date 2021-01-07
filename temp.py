@@ -1,6 +1,4 @@
 # from PIL import Image
-import numpy as np
-import imageio
 import os
 import argparse
 import matplotlib.pyplot as plt
@@ -10,11 +8,9 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
 
 import torch
-from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 
-import model.data_loader as data_loader
-from model.ae import AE
+import data_loader as data_loader
 from model.vae import BetaVAE
 import utils
 
