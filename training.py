@@ -23,8 +23,7 @@ import utils
 import model.ae as ae
 import model.vae as vae
 import data_loader as data_loader
-from evaluate import evaluate
-from metrics import metrics
+from metrics import metrics  # TODO
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
@@ -38,7 +37,7 @@ parser.add_argument('--restore_file', default=None,
                     training")  # 'best' or 'train'
 
 
-def train(model, optimizer, loss_fn, dataloader, metrics, params):
+def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
     """Train the model on `num_steps` batches
 
     Args:
@@ -112,6 +111,60 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
     return metrics_mean
 
 
+def evaluate_epoch(model, loss_fn, dataloader, metrics, params):
+    """Evaluate the model on `num_steps` batches.
+
+    Args:
+        model: (torch.nn.Module) the neural network
+        loss_fn: a function that takes batch_output and batch_labels and computes the loss for the batch
+        dataloader: (DataLoader) a torch.utils.data.DataLoader object that fetches data
+        metrics: (dict) a dictionary of functions that compute a metric using the output and labels of each batch
+        params: (Params) hyperparameters
+        num_steps: (int) number of batches to train on, each of size params.batch_size
+    """
+
+    # set model to evaluation mode
+    model.eval()
+
+    # summary for current eval loop
+    summ = []
+
+    # compute metrics over the dataset
+    for data_batch in dataloader:
+
+        # move to GPU if available
+        if params.cuda:
+            data_batch = data_batch.cuda(non_blocking=True)
+        # fetch the next evaluation batch
+        data_batch = Variable(data_batch)
+
+        # compute model output
+        if params.variational:
+            output_batch, mu, logvar = model(data_batch)
+            loss = loss_fn(output_batch, data_batch, mu, logvar)
+        else:
+            output_batch = model(data_batch)
+            loss = loss_fn(output_batch, data_batch)
+
+        # extract data from torch Variable, move to cpu, convert to numpy arrays
+        # output_batch = output_batch.data.cpu().numpy()
+        # data_batch = data_batch.data.cpu().numpy()
+
+        # compute all metrics on this batch
+        summary_batch = {metric: metrics[metric](output_batch, data_batch)
+                         for metric in metrics}
+        summary_batch['loss'] = loss.item()
+        summ.append(summary_batch)
+
+    # compute mean of all metrics in summary
+    metrics_mean = {metric: np.mean([x[metric]
+                                     for x in summ]) for metric in summ[0]}
+    metrics_string = " ; ".join("{}: {:05.3f}".format(k, v)
+                                for k, v in metrics_mean.items())
+    logging.info("- Eval metrics : " + metrics_string)
+    return metrics_mean
+
+
 def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params, model_dir,
                        weights_dir, restore_file=None, use_wandb=True):
     """Train the model and evaluate every epoch.
@@ -142,14 +195,12 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         logging.info("Epoch {}/{}".format(epoch + 1, params.num_epochs))
 
         # compute number of batches in one epoch (one full pass over the training set)
-        train_metrics = train(model, optimizer, loss_fn, train_dataloader, metrics, params)
-        train_loss, train_mse = train_metrics['loss'], train_metrics['mse']
+        train_metrics = train_epoch(model, optimizer, loss_fn, train_dataloader, metrics, params)
+        train_loss, train_mse = train_metrics['loss'], train_metrics['mse']  # TODO generalise this
 
         # Evaluate for one epoch on validation set
-        val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
-
-        val_loss = val_metrics['loss']
-        val_mse = val_metrics['mse']
+        val_metrics = evaluate_epoch(model, loss_fn, val_dataloader, metrics, params)
+        val_loss, val_mse = val_metrics['loss'], val_metrics['mse']  # TODO generalise this
         is_best = val_loss <= best_val_loss  # might need to change (to >=) if changing the metric
 
         # Save weights
@@ -195,9 +246,7 @@ if __name__ == '__main__':
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-
     weights_filename_suffix = 'vae' if params.variational else 'ae'
-
     weights_dir = os.path.join(args.weights_dir, "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")) + "_" + weights_filename_suffix
     Path(weights_dir).mkdir(parents=True, exist_ok=True)
 
@@ -232,12 +281,7 @@ if __name__ == '__main__':
         wandb_run = wandb.init(project="vae-descr", config=params)  # TODO wandb project name should be a parameter
         wandb.watch(model)
 
-    # fetch loss function and metrics
     loss_fn = model.loss
-    # if params.variational:  # TODO make one statement like: model.metrics (refactor AE and VAE classes)
-    #     metrics = vae.metrics  # TODO check if correct
-    # else:
-    #     metrics = ae.metrics  # TODO check if correct
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))

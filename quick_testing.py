@@ -28,22 +28,19 @@ parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before \
                     training")  # 'best' or 'train'
 
-
 args = parser.parse_args()
 weights_path = os.path.join(args.weights_dir, 'vae_20201211_151545/best.pth.tar')
-# data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
 model = BetaVAE(128)#AE()
 model.load_state_dict(torch.load(weights_path)['state_dict'])
 model.eval()
 
-model = model.cuda()
-
 params = utils.Params(json_path)
-# use GPU if available
 params.cuda = torch.cuda.is_available()
 
+if params.cuda:
+    model = model.cuda()
 dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
 test_dl = dataloaders['test']
 
@@ -55,12 +52,11 @@ diff_psnr_cum = 0
 
 for data_batch in test_dl:
 
-    # move to GPU if available
-    data_batch = data_batch.cuda(non_blocking=True)
-    # fetch the next evaluation batch
+    if params.cuda:
+        data_batch = data_batch.cuda(non_blocking=True)
+
     data_batch = Variable(data_batch)
 
-    # compute model output
     output_batch, _, _ = model(data_batch)
 
     data_batch = data_batch.cpu().numpy()
@@ -77,14 +73,11 @@ for data_batch in test_dl:
         break
 
     for i in range(output_batch.shape[0]):
-        # diff_mse = np.mean(np.subtract(data_batch[i], output_batch[i], dtype=float) ** 2)# * 255.0
         diff_mse = mse(data_batch[i], output_batch[i])
         diff_mse_cum += diff_mse
 
         dr_max = max(data_batch[i].max(), output_batch[i].max())
         dr_min = min(data_batch[i].min(), output_batch[i].min())
-
-        # print(dr_max)
 
         diff_ssim = ssim(data_batch[i,0], output_batch[i,0], data_range=dr_max - dr_min)
         diff_ssim_cum += diff_ssim
