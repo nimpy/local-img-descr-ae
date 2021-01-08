@@ -20,8 +20,8 @@ from torchsummary import summary
 import wandb
 
 import utils
-import model.ae as ae
-import model.vae as vae
+import models.ae as ae
+import models.vae as vae
 import data_loader as data_loader
 from metrics import metrics  # TODO
 

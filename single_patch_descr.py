@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-import model.ae as ae
-import model.vae as vae
+import models.ae as ae
+import models.vae as vae
 
 
 def encode_single_patch(model, patch):  # TODO ensure the types of model and patch are correct

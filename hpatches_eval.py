@@ -5,8 +5,8 @@ import os
 import numpy as np
 import datetime
 
-import model.ae as ae
-import model.vae as vae
+import models.ae as ae
+import models.vae as vae
 
 import sys
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')

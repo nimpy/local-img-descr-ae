@@ -11,7 +11,7 @@ import torch
 from torch.autograd import Variable
 
 import data_loader as data_loader
-from model.vae import BetaVAE
+from models.vae import BetaVAE
 import utils
 
 torch.manual_seed(42)
