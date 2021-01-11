@@ -5,7 +5,7 @@ import os
 from subprocess import check_call
 import sys
 
-import utils
+import utilities
 
 
 PYTHON = sys.executable
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     json_path = os.path.join(args.parent_dir, 'params.json')
     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
-    params = utils.Params(json_path)
+    params = utilities.Params(json_path)
 
     # Perform hypersearch over one parameter
     learning_rates = [1e-4, 1e-3, 1e-2]

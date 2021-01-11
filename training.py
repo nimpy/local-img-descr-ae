@@ -19,7 +19,7 @@ from torchsummary import summary
 
 import wandb
 
-import utils
+import utilities
 import models.ae as ae
 import models.vae as vae
 import data_loader as data_loader
@@ -55,7 +55,7 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
 
     # summary for current training loop and a running average object for loss
     summ = []
-    loss_avg = utils.RunningAverage()
+    loss_avg = utilities.RunningAverage()
 
     # Use tqdm for progress bar
     with tqdm(total=len(dataloader)) as t:
@@ -186,7 +186,7 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         restore_path = os.path.join(
             args.model_dir, args.restore_file + '.pth.tar')
         logging.info("Restoring parameters from {}".format(restore_path))
-        utils.load_checkpoint(restore_path, model, optimizer)
+        utilities.load_checkpoint(restore_path, model, optimizer)
 
     best_val_loss = math.inf  # might need to change (to 0.0) if changing the metric
 
@@ -204,11 +204,11 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         is_best = val_loss <= best_val_loss  # might need to change (to >=) if changing the metric
 
         # Save weights
-        utils.save_checkpoint({'epoch': epoch + 1,
+        utilities.save_checkpoint({'epoch': epoch + 1,
                                'state_dict': model.state_dict(),
                                'optim_dict': optimizer.state_dict()},
-                              is_best=is_best,
-                              checkpoint=weights_dir)
+                                  is_best=is_best,
+                                  checkpoint=weights_dir)
 
         # If best_eval, best_save_path
         if is_best:
@@ -218,12 +218,12 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
                 weights_dir, "metrics_val_best_weights.json")
-            utils.save_dict_to_json(val_metrics, best_json_path)
+            utilities.save_dict_to_json(val_metrics, best_json_path)
 
         # Save latest val metrics in a json file in the model directory
         last_json_path = os.path.join(
             weights_dir, "metrics_val_last_weights.json")
-        utils.save_dict_to_json(val_metrics, last_json_path)
+        utilities.save_dict_to_json(val_metrics, last_json_path)
 
         if use_wandb:
             wandb.log({"loss": train_loss, "val_loss": val_loss, "mse": train_mse, "val_mse": val_mse})
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     json_path = os.path.join(args.model_dir, 'params.json')
     assert os.path.isfile(
         json_path), "No json configuration file found at {}".format(json_path)
-    params = utils.Params(json_path)
+    params = utilities.Params(json_path)
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     Path(weights_dir).mkdir(parents=True, exist_ok=True)
 
     # Set the logger
-    utils.set_logger(os.path.join(weights_dir, 'train.log'))
+    utilities.set_logger(os.path.join(weights_dir, 'train.log'))
 
     # Create the input data pipeline
     logging.info("Loading the datasets...")

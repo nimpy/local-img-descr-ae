@@ -12,7 +12,7 @@ from torch.autograd import Variable
 
 import data_loader as data_loader
 from models.vae import BetaVAE
-import utils
+import utilities
 
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
@@ -36,7 +36,7 @@ model = BetaVAE(128)#AE()
 model.load_state_dict(torch.load(weights_path)['state_dict'])
 model.eval()
 
-params = utils.Params(json_path)
+params = utilities.Params(json_path)
 params.cuda = torch.cuda.is_available()
 
 if params.cuda:
