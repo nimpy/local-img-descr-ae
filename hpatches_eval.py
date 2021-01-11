@@ -21,6 +21,7 @@ import sys
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
 from utils.tasks import methods, eval_verification, eval_matching, eval_retrieval
 from utils.hpatch import load_descrs
+from utils.results import results_methods
 
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
 # hpatches_seqs = ["i_ski", "i_table", "i_troulos", "i_melon", "i_tools", "i_kions", "i_londonbridge", "i_nijmegen", "i_boutique", "i_parking", "i_steps", "i_fog", "i_leuven", "i_dc", "i_partyfood", "i_pool", "i_castle", "i_bologna", "i_smurf", "i_crownnight", "v_azzola", "v_tempera", "v_machines", "v_coffeehouse", "v_graffiti", "v_artisans", "v_maskedman", "v_talent", "v_bees", "v_dirtywall", "v_blueprint", "v_war", "v_adam", "v_pomegranate", "v_busstop", "v_weapons", "v_gardens", "v_feast", "v_man", "v_wounded"]  # c test
@@ -58,7 +59,9 @@ def hpatches_benchmark(model, use_wandb):
 
     # hpatches_extract_descrs(model)
 
-    hpatches_eval_tasks()
+    # hpatches_eval_on_all_tasks()
+
+    hpatches_collect_results()
 
     return 0
 
@@ -91,7 +94,7 @@ def hpatches_extract_descrs(model):
     return
 
 
-def hpatches_eval_tasks():
+def hpatches_eval_on_all_tasks():
 
     descr = load_descrs("/scratch/cloned_repositories/hpatches-benchmark/data/ae_bak")
     for method_name in methods.keys():
@@ -101,6 +104,16 @@ def hpatches_eval_tasks():
 
         res = methods[method_name](descr, split_c)
         dill.dump(res, open(results_path, "wb"))
+
+
+def hpatches_collect_results():
+    for results_method_name in results_methods.keys():
+        print("%s task results:" % (results_method_name.capitalize()))
+        descr = 'ae_bak'
+        results_methods[results_method_name](descr, split_c)
+        print()
+
+
 
 if __name__ == '__main__':
 
