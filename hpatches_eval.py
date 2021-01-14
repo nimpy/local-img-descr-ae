@@ -14,6 +14,7 @@ from tabulate import tabulate as tb
 import models.ae as ae
 import models.vae as vae
 from single_patch_descr import encode_single_patch
+from utilities import default_to_regular_dict
 
 import sys
 # sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
@@ -24,13 +25,11 @@ from utils.hpatch import load_descrs
 # from utils.results import results_methods
 
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
-# hpatches_seqs = ["i_ski", "i_table", "i_troulos", "i_melon", "i_tools", "i_kions", "i_londonbridge", "i_nijmegen", "i_boutique", "i_parking", "i_steps", "i_fog", "i_leuven", "i_dc", "i_partyfood", "i_pool", "i_castle", "i_bologna", "i_smurf", "i_crownnight", "v_azzola", "v_tempera", "v_machines", "v_coffeehouse", "v_graffiti", "v_artisans", "v_maskedman", "v_talent", "v_bees", "v_dirtywall", "v_blueprint", "v_war", "v_adam", "v_pomegranate", "v_busstop", "v_weapons", "v_gardens", "v_feast", "v_man", "v_wounded"]  # c test
 
 with open(os.path.join("/scratch/cloned_repositories/hpatches-benchmark/python/utils", "splits.json")) as f:
     splits = json.load(f)
 split_c = splits['c']
 hpatches_seqs = split_c['test']
-# print(hpatches_seqs)
 
 hpatches_data_dir = "/scratch/hpatches/hpatches-benchmark/data/hpatches-release"
 hpatches_seqs = [os.path.join(hpatches_data_dir, test_seq) for test_seq in hpatches_seqs]
@@ -40,7 +39,7 @@ encodings_dir = os.path.join(encodings_base_dir, 'ae1')#datetime.datetime.now().
 
 results_dir = "/scratch/cloned_repositories/hpatches-benchmark/results"
 
-ft = {'e':'Easy','h':'Hard','t':'Tough'}
+ft = {'e':'Easy','h':'Hard','t':'Tough'}  # TODO: rename
 
 class hpatches_sequence:  # copied from HPatches repo (hence the non-standard case)
     """Class for loading an HPatches sequence from a sequence folder"""
@@ -110,20 +109,23 @@ def hpatches_eval_on_all_tasks():
 
 def hpatches_collect_results(use_wandb):
     descr = 'ae_bak'
-    # for results_method_name in results_methods.keys():
-    #     print("%s task results:" % (results_method_name.capitalize()))
-    #     results_methods[results_method_name](descr, split_c)
-    #     print()
-    wandb_log = {}
-    results_verification(descr, split_c)
+    result_verification = results_verification(descr, split_c)
     print()
-    results_matching(descr, split_c)
+    result_matching = results_matching(descr, split_c)
     print()
-    results_retrieval(descr, split_c)
+    result_retrieval = results_retrieval(descr, split_c)
+    print()
+
+    results = {}
+    results['verification'] = result_verification
+    results['matching'] = result_matching
+    results['retrieval'] = result_retrieval
+    print(results)
 
 
 def results_verification(desc, splt):
     v = {'balanced':'auc','imbalanced':'ap'}
+    inter_intra = ['inter', 'intra']
     res = dill.load(open(os.path.join(results_dir, desc+"_verification_"+splt['name']+".p"), "rb"))
     for r in v:
         print("%s - %s variant (%s) " % (desc.upper(),r.capitalize(),v[r]))
@@ -133,6 +135,19 @@ def results_verification(desc, splt):
             results.append([ft[t], res[t]['inter'][r][v[r]],res[t]['intra'][r][v[r]]])
         print(tb(results,headers=heads))
         print()
+
+    # logging
+    for diff_level in ft.keys():
+        for ii in inter_intra:
+            for version in v.keys():
+                if version == 'balanced':
+                    res[diff_level][ii][version].pop('fpr')
+                    res[diff_level][ii][version].pop('tpr')
+                else:
+                    res[diff_level][ii][version].pop('pr')
+                    res[diff_level][ii][version].pop('rc')
+
+    return default_to_regular_dict(res)
 
 
 def results_matching(desc, splt):
@@ -152,6 +167,12 @@ def results_matching(desc, splt):
     results.append(sum(results)/float(len(results)))
     print(tb([results],headers=heads))
     print("\n")
+
+    # logging
+    return_results = {}
+    for i, t in enumerate(['e', 'h', 't', 'mean']):
+        return_results[t] = results[i]
+    return return_results
 
 
 def results_retrieval(desc, splt):
@@ -182,7 +203,15 @@ def results_retrieval(desc, splt):
     results.append(['mean']+list(np.mean(res,axis=0)))
     print(tb(results,headers=heads))
 
-
+    # logging
+    for k in ['e', 'h', 't']:
+        for psize in sorted(mAP[k]):
+            mAP[k][psize] /= n_q
+    res_mean = list(np.mean(res,axis=0))
+    mAP['mean'] = {}
+    for i, psize in enumerate(sorted(mAP[k])):
+        mAP['mean'][psize] = res_mean[i]
+    return mAP
 
 
 if __name__ == '__main__':

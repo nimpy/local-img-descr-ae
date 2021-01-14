@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import collections
 
 import torch
 
@@ -140,3 +141,9 @@ def load_checkpoint(checkpoint, model, optimizer=None):
         optimizer.load_state_dict(checkpoint['optim_dict'])
 
     return checkpoint
+
+
+def default_to_regular_dict(d):
+    if isinstance(d, collections.defaultdict):
+        d = {k: default_to_regular_dict(v) for k, v in d.items()}
+    return d
