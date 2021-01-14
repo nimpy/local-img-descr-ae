@@ -9,7 +9,7 @@ import torch
 
 import dill
 import json
-
+from tabulate import tabulate as tb
 
 import models.ae as ae
 import models.vae as vae
@@ -21,7 +21,7 @@ import sys
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
 from utils.tasks import methods, eval_verification, eval_matching, eval_retrieval
 from utils.hpatch import load_descrs
-from utils.results import results_methods
+# from utils.results import results_methods
 
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
 # hpatches_seqs = ["i_ski", "i_table", "i_troulos", "i_melon", "i_tools", "i_kions", "i_londonbridge", "i_nijmegen", "i_boutique", "i_parking", "i_steps", "i_fog", "i_leuven", "i_dc", "i_partyfood", "i_pool", "i_castle", "i_bologna", "i_smurf", "i_crownnight", "v_azzola", "v_tempera", "v_machines", "v_coffeehouse", "v_graffiti", "v_artisans", "v_maskedman", "v_talent", "v_bees", "v_dirtywall", "v_blueprint", "v_war", "v_adam", "v_pomegranate", "v_busstop", "v_weapons", "v_gardens", "v_feast", "v_man", "v_wounded"]  # c test
@@ -40,6 +40,7 @@ encodings_dir = os.path.join(encodings_base_dir, 'ae1')#datetime.datetime.now().
 
 results_dir = "/scratch/cloned_repositories/hpatches-benchmark/results"
 
+ft = {'e':'Easy','h':'Hard','t':'Tough'}
 
 class hpatches_sequence:  # copied from HPatches repo (hence the non-standard case)
     """Class for loading an HPatches sequence from a sequence folder"""
@@ -61,11 +62,12 @@ def hpatches_benchmark(model, use_wandb):
 
     # hpatches_eval_on_all_tasks()
 
-    hpatches_collect_results()
+    hpatches_collect_results(use_wandb)
 
     return 0
 
-def hpatches_extract_descrs(model):
+
+def hpatches_extract_descrs(model):  # TODO: speed up!
     # model.eval()
     # variational = isinstance(model, vae.BetaVAE)
 
@@ -106,12 +108,80 @@ def hpatches_eval_on_all_tasks():
         dill.dump(res, open(results_path, "wb"))
 
 
-def hpatches_collect_results():
-    for results_method_name in results_methods.keys():
-        print("%s task results:" % (results_method_name.capitalize()))
-        descr = 'ae_bak'
-        results_methods[results_method_name](descr, split_c)
+def hpatches_collect_results(use_wandb):
+    descr = 'ae_bak'
+    # for results_method_name in results_methods.keys():
+    #     print("%s task results:" % (results_method_name.capitalize()))
+    #     results_methods[results_method_name](descr, split_c)
+    #     print()
+    wandb_log = {}
+    results_verification(descr, split_c)
+    print()
+    results_matching(descr, split_c)
+    print()
+    results_retrieval(descr, split_c)
+
+
+def results_verification(desc, splt):
+    v = {'balanced':'auc','imbalanced':'ap'}
+    res = dill.load(open(os.path.join(results_dir, desc+"_verification_"+splt['name']+".p"), "rb"))
+    for r in v:
+        print("%s - %s variant (%s) " % (desc.upper(),r.capitalize(),v[r]))
+        heads = ["Noise","Inter","Intra"]
+        results = []
+        for t in ['e','h','t']:
+            results.append([ft[t], res[t]['inter'][r][v[r]],res[t]['intra'][r][v[r]]])
+        print(tb(results,headers=heads))
         print()
+
+
+def results_matching(desc, splt):
+    res = dill.load(open(os.path.join(results_dir, desc+"_matching_"+splt['name']+".p"), "rb"))
+    mAP = {'e':0,'h':0,'t':0}
+    k_mAP = 0
+    heads = [ft['e'],ft['h'],ft['t'],'mean']
+    for seq in res:
+        for t in ['e','h','t']:
+            for idx in range(1,6):
+                mAP[t] += res[seq][t][idx]['ap']
+                k_mAP+=1
+    k_mAP = k_mAP / 3.0
+    print("%s - mAP " % (desc.upper()))
+
+    results = [mAP['e']/k_mAP,mAP['h']/k_mAP,mAP['t']/k_mAP]
+    results.append(sum(results)/float(len(results)))
+    print(tb([results],headers=heads))
+    print("\n")
+
+
+def results_retrieval(desc, splt):
+    res = dill.load(open(os.path.join(results_dir, desc+"_retrieval_"+splt['name']+".p"), "rb"))
+    print("%s - mAP 10K queries " % (desc.upper()))
+    n_q= float(len(res.keys()))
+    heads = ['']
+    mAP = dict.fromkeys(['e','h','t'])
+    for k in mAP:
+        mAP[k] = dict.fromkeys(res[0][k])
+        for psize in mAP[k]:
+            mAP[k][psize] = 0
+
+    for qid in res:
+        for k in mAP:
+            for psize in mAP[k]:
+                mAP[k][psize] +=  res[qid][k][psize]['ap']
+
+    results = []
+    for k in ['e','h','t']:
+        heads = ['Noise']+sorted(mAP[k])
+        r = []
+        for psize in sorted(mAP[k]):
+            r.append(mAP[k][psize]/n_q)
+        results.append([ft[k]]+r)
+
+    res = np.array(results)[:,1:].astype(np.float32)
+    results.append(['mean']+list(np.mean(res,axis=0)))
+    print(tb(results,headers=heads))
+
 
 
 
