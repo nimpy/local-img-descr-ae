@@ -1,11 +1,11 @@
-import sys
-import glob
 import os
 import cv2
 import numpy as np
 import datetime
 
 import torch
+
+import wandb
 
 import dill
 import json
@@ -22,7 +22,6 @@ import sys
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
 from utils.tasks import methods, eval_verification, eval_matching, eval_retrieval
 from utils.hpatch import load_descrs
-# from utils.results import results_methods
 
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
 
@@ -40,6 +39,7 @@ encodings_dir = os.path.join(encodings_base_dir, 'ae1')#datetime.datetime.now().
 results_dir = "/scratch/cloned_repositories/hpatches-benchmark/results"
 
 ft = {'e':'Easy','h':'Hard','t':'Tough'}  # TODO: rename
+
 
 class hpatches_sequence:  # copied from HPatches repo (hence the non-standard case)
     """Class for loading an HPatches sequence from a sequence folder"""
@@ -116,11 +116,17 @@ def hpatches_collect_results(use_wandb):
     result_retrieval = results_retrieval(descr, split_c)
     print()
 
-    results = {}
-    results['verification'] = result_verification
-    results['matching'] = result_matching
-    results['retrieval'] = result_retrieval
-    print(results)
+    # results = {}
+    # results['verification'] = result_verification
+    # results['matching'] = result_matching
+    # results['retrieval'] = result_retrieval
+    # print(results)
+    print(result_verification)
+    print(result_matching)
+    print(result_retrieval)
+
+    if use_wandb:
+        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval})
 
 
 def results_verification(desc, splt):
@@ -224,4 +230,17 @@ if __name__ == '__main__':
     # TODO: delete the previous directory with descriptor's encodings, and make a new one
 
     use_wandb = False
+    if use_wandb:
+        wandb.login()
+        wandb_run = wandb.init(project="temp")
+        wandb.watch(model)
+
+    # for i in range(10):
     hpatches_benchmark(model, use_wandb)
+
+    if use_wandb:
+        wandb_run.finish()
+
+
+# TODO add retrieval.e.mean (mean for 100, 200, ...)
+# TODO also add mean of every metric
