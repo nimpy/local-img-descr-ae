@@ -210,13 +210,15 @@ def results_retrieval(desc, splt):
     print(tb(results,headers=heads))
 
     # logging
-    for k in ['e', 'h', 't']:
+    for i, k in enumerate(['e', 'h', 't']):
         for psize in sorted(mAP[k]):
             mAP[k][psize] /= n_q
+        mAP[k]['mean'] = np.mean(res, axis=1)[i]
     res_mean = list(np.mean(res,axis=0))
     mAP['mean'] = {}
-    for i, psize in enumerate(sorted(mAP[k])):
+    for i, psize in enumerate([100, 500, 1000, 5000, 10000, 15000, 20000]):
         mAP['mean'][psize] = res_mean[i]
+    mAP['mean']['mean'] = res.mean()
     return mAP
 
 
