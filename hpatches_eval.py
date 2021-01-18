@@ -14,7 +14,7 @@ from tabulate import tabulate as tb
 import models.ae as ae
 import models.vae as vae
 from single_patch_descr import encode_single_patch
-from utilities import default_to_regular_dict
+from utilities import default_to_regular_dict, pretty_dict
 
 import sys
 # sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
@@ -121,12 +121,25 @@ def hpatches_collect_results(use_wandb):
     # results['matching'] = result_matching
     # results['retrieval'] = result_retrieval
     # print(results)
+    print()
     print(result_verification)
     print(result_matching)
     print(result_retrieval)
+    print('\nVERIFICATION DICT')
+    pretty_dict(result_verification)
+    print('\nMATCHING DICT')
+    pretty_dict(result_matching)
+    print('\nRETRIEVAL DICT')
+    pretty_dict(result_retrieval)
+    print()
+    mean_verification = result_verification['mean']['mean']
+    mean_matching = result_matching['mean']
+    mean_retrieval = result_retrieval['mean']['mean']
+    overall_mean = np.mean(np.array([mean_verification, mean_matching, mean_retrieval]))
+    print("OVERALL MEAN:", overall_mean)
 
     if use_wandb:
-        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval})
+        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval, "overall_mean": overall_mean})
 
 
 def results_verification(desc, splt):
@@ -153,7 +166,20 @@ def results_verification(desc, splt):
                     res[diff_level][ii][version].pop('pr')
                     res[diff_level][ii][version].pop('rc')
 
-    return default_to_regular_dict(res)
+    res = default_to_regular_dict(res)
+    res['mean'] = {}
+    for ii in inter_intra:
+        res['mean'][ii] = {}
+        mean_ii_cum = 0
+        for version in v.keys():
+            res['mean'][ii][version] = {}
+            res['mean'][ii][version][v[version]] = (res['e'][ii][version][v[version]] +
+                                                    res['h'][ii][version][v[version]] +
+                                                    res['t'][ii][version][v[version]]) / 3.0
+            mean_ii_cum += res['mean'][ii][version][v[version]]
+        res['mean'][ii]['mean'] = mean_ii_cum / 2.0
+    res['mean']['mean'] = (res['mean']['inter']['mean'] + res['mean']['intra']['mean']) / 2.0
+    return res
 
 
 def results_matching(desc, splt):
@@ -243,6 +269,3 @@ if __name__ == '__main__':
     if use_wandb:
         wandb_run.finish()
 
-
-# TODO add retrieval.e.mean (mean for 100, 200, ...)
-# TODO also add mean of every metric
