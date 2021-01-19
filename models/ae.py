@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch
 import pdb
 
-
+# TODO: add a fully-connected layer so that the architecture is the same as that of variational autoencoder
 class AE(nn.Module):
     def __init__(self):
         super(AE, self).__init__()

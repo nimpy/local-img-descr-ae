@@ -66,7 +66,7 @@ def hpatches_benchmark(model, use_wandb):
     return 0
 
 
-def hpatches_extract_descrs(model):  # TODO: speed up!
+def hpatches_extract_descrs(model):
     model.eval()
     variational = isinstance(model, vae.BetaVAE)
 
@@ -75,9 +75,6 @@ def hpatches_extract_descrs(model):  # TODO: speed up!
         path = os.path.join(encodings_dir, seq.name)
         if not os.path.exists(path):
             os.makedirs(path)
-
-        encoding_size = (int(seq.N), 32, 8, 8)  # (int(seq.N), 128)  # TODO don't leave this hard-coded
-        encodings = np.zeros(encoding_size)
 
         print(seq.name)
         for type in hpatches_types:
@@ -92,18 +89,9 @@ def hpatches_extract_descrs(model):  # TODO: speed up!
                 batch_encodings = model.encode(batch)
             batch_encodings = batch_encodings.detach().numpy()
 
-            for i, patch in enumerate(getattr(seq, type)):
-                patch = patch / 255.0
-                patch = np.expand_dims(patch, axis=0)
-                patch = np.expand_dims(patch, axis=0)
-                patch = torch.from_numpy(patch).float()
-                encodings[i] = encode_single_patch(model, patch).detach().numpy()
-
-            # checking if encodings and batch_encodings are the same
-            # print(batch_encodings.shape, encodings.shape)
-            print((batch_encodings == encodings).all())
-
-            # np.savetxt(os.path.join(path, type + '.csv'), batch_encodings, delimiter=',')  # X is an array
+            # reshape to (batch_size, flattened_encoding)
+            batch_encodings = batch_encodings.reshape(batch_encodings.shape[0], np.product(batch_encodings.shape[1:]))
+            np.savetxt(os.path.join(path, type + '.csv'), batch_encodings, delimiter=',')
 
     return
 
