@@ -2,9 +2,9 @@ import os
 import cv2
 import numpy as np
 import datetime
+import logging
 
 import torch
-
 import wandb
 
 import dill
@@ -13,17 +13,17 @@ from tabulate import tabulate as tb
 
 import models.ae as ae
 import models.vae as vae
-from single_patch_descr import encode_single_patch
 from utilities import default_to_regular_dict, pretty_dict
+import utilities
 
 import sys
-# sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
-# from extract_opencv_sift import hpatches_sequence
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
 from utils.tasks import methods, eval_verification, eval_matching, eval_retrieval
 from utils.hpatch import load_descrs
 
+
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
+ft = {'e': 'Easy', 'h': 'Hard', 't': 'Tough'}  # TODO: rename
 
 with open(os.path.join("/scratch/cloned_repositories/hpatches-benchmark/python/utils", "splits.json")) as f:
     splits = json.load(f)
@@ -37,10 +37,11 @@ encodings_base_dir = "/scratch/cloned_repositories/hpatches-benchmark/data"
 
 results_dir = "/scratch/cloned_repositories/hpatches-benchmark/results"
 
-ft = {'e':'Easy','h':'Hard','t':'Tough'}  # TODO: rename
 
-# TODO: rename to use camel case
-class hpatches_sequence:  # copied from HPatches repo (hence the non-standard case)
+# taken and adjusted from:
+# repository https://github.com/hpatches/hpatches-benchmark
+# file hpatches-benchmark/python/extract_opencv_sift.py
+class HPatchesSequence:
     """Class for loading an HPatches sequence from a sequence folder"""
     itr = hpatches_types
     def __init__(self,base):
@@ -54,35 +55,39 @@ class hpatches_sequence:  # copied from HPatches repo (hence the non-standard ca
             setattr(self, t, np.split(im, self.N))
 
 
-def hpatches_benchmark(model, model_version, use_wandb):
+def hpatches_benchmark_a_model(model, model_version, use_wandb):
 
-    hpatches_extract_descrs(model, model_version)
+    logging.info("===== Extracting the encodings using the descriptor =====")
+    hpatches_extract_encodings(model, model_version)
 
+    logging.info("\n===== Evaluating the descriptor on all tasks =====")
     hpatches_eval_on_all_tasks(model_version)
 
-    hpatches_collect_results(model_version, use_wandb)
+    logging.info("\n===== Collecting the results from tasks =====")
+    overall_mean = hpatches_collect_results(model_version, use_wandb)
 
-    return 0
+    return overall_mean
 
 
-def hpatches_extract_descrs(model, model_version):
+def hpatches_extract_encodings(model, model_version):
     encodings_dir = os.path.join(encodings_base_dir, model_version)
-    print(encodings_dir)
+
     model.eval()
     variational = isinstance(model, vae.BetaVAE)
 
     for seq_path in hpatches_seqs:
-        seq = hpatches_sequence(seq_path)
+        seq = HPatchesSequence(seq_path)
         path = os.path.join(encodings_dir, seq.name)
+        logging.info(seq.name)
+
         if not os.path.exists(path):
             os.makedirs(path)
         elif len(os.listdir(path)) == len(hpatches_types):
-            print('The encodings already exist! Not gonna calculate them again!')
+            logging.info('The encodings already exist! Not gonna calculate them again!')
             continue
         else:
-            print('Might override some previously calculated encodings!')
+            logging.info('Might override some previously calculated encodings!')
 
-        print(seq.name)
         for type in hpatches_types:
             batch = getattr(seq, type)
             batch = np.array(batch)
@@ -106,32 +111,25 @@ def hpatches_eval_on_all_tasks(model_version):
 
     descr = load_descrs(os.path.join(encodings_base_dir, model_version))
     for method_name in methods.keys():
-        print(method_name)
         results_path = os.path.join(results_dir, model_version + "_" + method_name + "_" + split_c['name'] + ".p")
-        print(results_path)
+        logging.info("Evaluating HPatches task: " + method_name)
+        logging.info("The results will be saved under:\n    " + results_path)
 
         res = methods[method_name](descr, split_c)
         dill.dump(res, open(results_path, "wb"))
 
 
 def hpatches_collect_results(model_version, use_wandb):
-    # descr = 'ae_bak'
     result_verification = results_verification(model_version, split_c)
-    print()
+    logging.info("\n")
     result_matching = results_matching(model_version, split_c)
-    print()
+    logging.info("\n")
     result_retrieval = results_retrieval(model_version, split_c)
-    print()
 
-    # results = {}
-    # results['verification'] = result_verification
-    # results['matching'] = result_matching
-    # results['retrieval'] = result_retrieval
-    # print(results)
-    print()
-    print(result_verification)
-    print(result_matching)
-    print(result_retrieval)
+    logging.info("\nDicts:")
+    logging.info(result_verification)
+    logging.info(result_matching)
+    logging.info(result_retrieval)
     print('\nVERIFICATION DICT')
     pretty_dict(result_verification)
     print('\nMATCHING DICT')
@@ -143,12 +141,17 @@ def hpatches_collect_results(model_version, use_wandb):
     mean_matching = result_matching['mean']
     mean_retrieval = result_retrieval['mean']['mean']
     overall_mean = np.mean(np.array([mean_verification, mean_matching, mean_retrieval]))
-    print("OVERALL MEAN:", overall_mean)
+    logging.info("OVERALL MEAN: " +  str(overall_mean))
 
     if use_wandb:
         wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval, "overall_mean": overall_mean})
 
+    return overall_mean
 
+
+# taken and adjusted from:
+# repository https://github.com/hpatches/hpatches-benchmark
+# file hpatches-benchmark/python/utils/results.py
 def results_verification(desc, splt):
     v = {'balanced':'auc','imbalanced':'ap'}
     inter_intra = ['inter', 'intra']
@@ -189,6 +192,9 @@ def results_verification(desc, splt):
     return res
 
 
+# taken and adjusted from:
+# repository https://github.com/hpatches/hpatches-benchmark
+# file hpatches-benchmark/python/utils/results.py
 def results_matching(desc, splt):
     res = dill.load(open(os.path.join(results_dir, desc+"_matching_"+splt['name']+".p"), "rb"))
     mAP = {'e':0,'h':0,'t':0}
@@ -214,6 +220,9 @@ def results_matching(desc, splt):
     return return_results
 
 
+# taken and adjusted from:
+# repository https://github.com/hpatches/hpatches-benchmark
+# file hpatches-benchmark/python/utils/results.py
 def results_retrieval(desc, splt):
     res = dill.load(open(os.path.join(results_dir, desc+"_retrieval_"+splt['name']+".p"), "rb"))
     print("%s - mAP 10K queries " % (desc.upper()))
@@ -263,7 +272,8 @@ if __name__ == '__main__':
     model = vae.BetaVAE(128)  # ae.AE()
     model.load_state_dict(torch.load(weights_path)['state_dict'])
 
-    # TODO: delete the previous directory with descriptor's encodings, and make a new one
+    utilities.set_logger(os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version,
+                                      'hpatches_benchmarking_' + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + '.log'))
 
     use_wandb = False
     wandb_run = None
@@ -273,10 +283,8 @@ if __name__ == '__main__':
         wandb.watch(model)
 
     # for i in range(10):
-    hpatches_benchmark(model, model_version, use_wandb)
+    hpatches_benchmark_a_model(model, model_version, use_wandb)
 
     if use_wandb:
         wandb_run.finish()
 
-
-# TODO: instead of printing, I might want to use log
