@@ -34,13 +34,12 @@ hpatches_data_dir = "/scratch/hpatches/hpatches-benchmark/data/hpatches-release"
 hpatches_seqs = [os.path.join(hpatches_data_dir, test_seq) for test_seq in hpatches_seqs]
 
 encodings_base_dir = "/scratch/cloned_repositories/hpatches-benchmark/data"
-encodings_dir = os.path.join(encodings_base_dir, 'ae1')#datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
 
 results_dir = "/scratch/cloned_repositories/hpatches-benchmark/results"
 
 ft = {'e':'Easy','h':'Hard','t':'Tough'}  # TODO: rename
 
-
+# TODO: rename to use camel case
 class hpatches_sequence:  # copied from HPatches repo (hence the non-standard case)
     """Class for loading an HPatches sequence from a sequence folder"""
     itr = hpatches_types
@@ -55,18 +54,20 @@ class hpatches_sequence:  # copied from HPatches repo (hence the non-standard ca
             setattr(self, t, np.split(im, self.N))
 
 
-def hpatches_benchmark(model, use_wandb):
+def hpatches_benchmark(model, model_version, use_wandb):
 
-    hpatches_extract_descrs(model)
+    hpatches_extract_descrs(model, model_version)
 
-    # hpatches_eval_on_all_tasks()
+    hpatches_eval_on_all_tasks(model_version)
 
-    # hpatches_collect_results(use_wandb)
+    hpatches_collect_results(model_version, use_wandb)
 
     return 0
 
 
-def hpatches_extract_descrs(model):
+def hpatches_extract_descrs(model, model_version):
+    encodings_dir = os.path.join(encodings_base_dir, model_version)
+    print(encodings_dir)
     model.eval()
     variational = isinstance(model, vae.BetaVAE)
 
@@ -75,6 +76,11 @@ def hpatches_extract_descrs(model):
         path = os.path.join(encodings_dir, seq.name)
         if not os.path.exists(path):
             os.makedirs(path)
+        elif len(os.listdir(path)) == len(hpatches_types):
+            print('The encodings already exist! Not gonna calculate them again!')
+            continue
+        else:
+            print('Might override some previously calculated encodings!')
 
         print(seq.name)
         for type in hpatches_types:
@@ -96,25 +102,25 @@ def hpatches_extract_descrs(model):
     return
 
 
-def hpatches_eval_on_all_tasks():
+def hpatches_eval_on_all_tasks(model_version):
 
-    descr = load_descrs("/scratch/cloned_repositories/hpatches-benchmark/data/ae_bak")
+    descr = load_descrs(os.path.join(encodings_base_dir, model_version))
     for method_name in methods.keys():
         print(method_name)
-        results_path = os.path.join(results_dir, "ae_bak" + "_" + method_name + "_" + split_c['name'] + ".p")
+        results_path = os.path.join(results_dir, model_version + "_" + method_name + "_" + split_c['name'] + ".p")
         print(results_path)
 
         res = methods[method_name](descr, split_c)
         dill.dump(res, open(results_path, "wb"))
 
 
-def hpatches_collect_results(use_wandb):
-    descr = 'ae_bak'
-    result_verification = results_verification(descr, split_c)
+def hpatches_collect_results(model_version, use_wandb):
+    # descr = 'ae_bak'
+    result_verification = results_verification(model_version, split_c)
     print()
-    result_matching = results_matching(descr, split_c)
+    result_matching = results_matching(model_version, split_c)
     print()
-    result_retrieval = results_retrieval(descr, split_c)
+    result_retrieval = results_retrieval(model_version, split_c)
     print()
 
     # results = {}
@@ -251,22 +257,26 @@ def results_retrieval(desc, splt):
 
 if __name__ == '__main__':
 
-    weights_path = '/scratch/image_datasets/3_65x65/ready/weights/ae_20201207_143916/best.pth.tar' # vae_20201212_100238
+    model_version = 'vae_20201212_100238'  # 'ae_20201207_143916'  # vae_20201212_100238
+    weights_path = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version, 'best.pth.tar')
 
-    model = ae.AE()  # vae.BetaVAE(128)  # ae.AE()
+    model = vae.BetaVAE(128)  # ae.AE()
     model.load_state_dict(torch.load(weights_path)['state_dict'])
 
     # TODO: delete the previous directory with descriptor's encodings, and make a new one
 
     use_wandb = False
+    wandb_run = None
     if use_wandb:
         wandb.login()
         wandb_run = wandb.init(project="temp")
         wandb.watch(model)
 
     # for i in range(10):
-    hpatches_benchmark(model, use_wandb)
+    hpatches_benchmark(model, model_version, use_wandb)
 
     if use_wandb:
         wandb_run.finish()
 
+
+# TODO: instead of printing, I might want to use log
