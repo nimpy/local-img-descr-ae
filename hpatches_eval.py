@@ -57,18 +57,18 @@ class hpatches_sequence:  # copied from HPatches repo (hence the non-standard ca
 
 def hpatches_benchmark(model, use_wandb):
 
-    # hpatches_extract_descrs(model)
+    hpatches_extract_descrs(model)
 
     # hpatches_eval_on_all_tasks()
 
-    hpatches_collect_results(use_wandb)
+    # hpatches_collect_results(use_wandb)
 
     return 0
 
 
 def hpatches_extract_descrs(model):  # TODO: speed up!
-    # model.eval()
-    # variational = isinstance(model, vae.BetaVAE)
+    model.eval()
+    variational = isinstance(model, vae.BetaVAE)
 
     for seq_path in hpatches_seqs:
         seq = hpatches_sequence(seq_path)
@@ -76,21 +76,34 @@ def hpatches_extract_descrs(model):  # TODO: speed up!
         if not os.path.exists(path):
             os.makedirs(path)
 
-        encoding_size = 128  # TODO don't leave this hard-coded
-        encodings = np.zeros((int(seq.N), encoding_size))
+        encoding_size = (int(seq.N), 32, 8, 8)  # (int(seq.N), 128)  # TODO don't leave this hard-coded
+        encodings = np.zeros(encoding_size)
 
         print(seq.name)
         for type in hpatches_types:
+            batch = getattr(seq, type)
+            batch = np.array(batch)
+            batch = batch / 255.0
+            batch = np.expand_dims(batch, axis=1)
+            batch = torch.from_numpy(batch).float()
+            if variational:
+                batch_encodings, _, _ = model.encode(batch)
+            else:
+                batch_encodings = model.encode(batch)
+            batch_encodings = batch_encodings.detach().numpy()
+
             for i, patch in enumerate(getattr(seq, type)):
-                # mi = np.mean(patch)    # trivial (mi,sigma) descriptor
-                # sigma = np.std(patch)  # trivial (mi,sigma) descriptor
-                # encodings[i] = np.array([mi,sigma])
                 patch = patch / 255.0
                 patch = np.expand_dims(patch, axis=0)
                 patch = np.expand_dims(patch, axis=0)
                 patch = torch.from_numpy(patch).float()
                 encodings[i] = encode_single_patch(model, patch).detach().numpy()
-            np.savetxt(os.path.join(path, type + '.csv'), encodings, delimiter=',')  # X is an array
+
+            # checking if encodings and batch_encodings are the same
+            # print(batch_encodings.shape, encodings.shape)
+            print((batch_encodings == encodings).all())
+
+            # np.savetxt(os.path.join(path, type + '.csv'), batch_encodings, delimiter=',')  # X is an array
 
     return
 
@@ -250,9 +263,9 @@ def results_retrieval(desc, splt):
 
 if __name__ == '__main__':
 
-    weights_path = '/scratch/image_datasets/3_65x65/ready/weights/vae_20201212_100238/best.pth.tar'
+    weights_path = '/scratch/image_datasets/3_65x65/ready/weights/ae_20201207_143916/best.pth.tar' # vae_20201212_100238
 
-    model = vae.BetaVAE(128)  # ae.AE()
+    model = ae.AE()  # vae.BetaVAE(128)  # ae.AE()
     model.load_state_dict(torch.load(weights_path)['state_dict'])
 
     # TODO: delete the previous directory with descriptor's encodings, and make a new one

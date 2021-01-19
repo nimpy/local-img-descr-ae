@@ -144,12 +144,14 @@ def load_checkpoint(checkpoint, model, optimizer=None):
 
 
 def default_to_regular_dict(d):
+    # from https://stackoverflow.com/a/26496899/4031135
     if isinstance(d, collections.defaultdict):
         d = {k: default_to_regular_dict(v) for k, v in d.items()}
     return d
 
 
 def pretty_dict(d, indent=0):
+    # from https://stackoverflow.com/a/3229493/4031135
     for key, value in d.items():
         print('\t' * indent + str(key))
         if isinstance(value, dict):
