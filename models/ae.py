@@ -3,10 +3,13 @@ import torch.nn.functional as F
 import torch
 import pdb
 
-# TODO: add a fully-connected layer so that the architecture is the same as that of variational autoencoder
+
 class AE(nn.Module):
-    def __init__(self):
+    def __init__(self, latent_size=128):
         super(AE, self).__init__()
+
+        self.latent_size = latent_size
+
         # encoder layers
         self.zeropad1 = nn.ZeroPad2d(1)
         self.conv1 = nn.Conv2d(1, 32, 3, padding=0)
@@ -18,7 +21,11 @@ class AE(nn.Module):
         self.conv3 = nn.Conv2d(32, 32, 3, padding=0)
         self.pool3 = nn.MaxPool2d(2, 2)
 
+        self.fc_enc = nn.Linear(2048, latent_size)
+
         # decoder layers
+        self.fc_dec = nn.Linear(latent_size, 2048)
+
         self.t_conv1 = nn.ConvTranspose2d(32, 32, 2, stride=2)
         self.t_conv2 = nn.ConvTranspose2d(32, 32, 2, stride=2)
         self.t_conv3 = nn.ConvTranspose2d(32, 1, 2, stride=2)
@@ -30,9 +37,16 @@ class AE(nn.Module):
         x = self.pool2(x)
         x = F.elu(self.conv3(self.zeropad3(x)))
         x = self.pool3(x)
+
+        x = x.view(-1, 2048)
+        x = self.fc_enc(x)
+
         return x
 
     def decode(self, x):
+        x = self.fc_dec(x)
+        x = x.view(-1, 32, 8, 8)
+
         x = F.elu(self.t_conv1(x))
         x = F.elu(self.t_conv2(x))
         x = torch.sigmoid(self.t_conv3(x))

@@ -159,7 +159,7 @@ def calculate_SSDs_for_descr(image, patch_size=65, query_stride=65, compare_stri
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
                     help="Directory containing the dataset")
-parser.add_argument('--model_dir', default='model/',
+parser.add_argument('--model_dir', default='models/',
                     help="Directory containing params.json")
 parser.add_argument('--weights_dir', default='/scratch/image_datasets/3_65x65/ready/weights',
                     help="Directory where weights will be saved")

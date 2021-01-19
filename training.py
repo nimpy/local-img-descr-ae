@@ -28,7 +28,7 @@ from metrics import metrics  # TODO
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
                     help="Directory containing the dataset")
-parser.add_argument('--model_dir', default='model/',
+parser.add_argument('--model_dir', default='models/',
                     help="Directory containing params.json")
 parser.add_argument('--weights_dir', default='/scratch/image_datasets/3_65x65/ready/weights',
                     help="Directory where weights will be saved")
@@ -268,7 +268,7 @@ if __name__ == '__main__':
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
         model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
     else:
-        model = ae.AE().cuda() if params.cuda else ae.AE()
+        model = ae.AE(latent_size=params.latent_size).cuda() if params.cuda else ae.AE(latent_size=params.latent_size)
 
     # print(model)
     summary(model, (1, 64, 64))
