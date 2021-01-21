@@ -71,10 +71,10 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
             # compute model output and loss
             if params.variational:
                 output_batch, mu, logvar = model(train_batch)
-                loss = - loss_fn(output_batch, train_batch, mu, logvar)
+                loss = loss_fn(output_batch, train_batch, mu, logvar)
             else:
                 output_batch = model(train_batch)
-                loss = - loss_fn(output_batch, train_batch)
+                loss = loss_fn(output_batch, train_batch)
             # pdb.set_trace()
 
 
@@ -143,10 +143,10 @@ def evaluate_epoch(model, loss_fn, dataloader, metrics, params):
         # compute model output
         if params.variational:
             output_batch, mu, logvar = model(data_batch)
-            loss = - loss_fn(output_batch, data_batch, mu, logvar)
+            loss = loss_fn(output_batch, data_batch, mu, logvar)
         else:
             output_batch = model(data_batch)
-            loss = - loss_fn(output_batch, data_batch)
+            loss = loss_fn(output_batch, data_batch)
 
         # extract data from torch Variable, move to cpu, convert to numpy arrays
         # output_batch = output_batch.data.cpu().numpy()
@@ -284,7 +284,7 @@ if __name__ == '__main__':
         wandb.watch(model)
 
     # loss_fn = model.loss
-    loss_fn = msssim()  # TODO: figure out how to use relu normalisation
+    loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
