@@ -57,7 +57,7 @@ class PatchesDataset(Dataset):
         return image#, self.labels[idx]
 
 
-def fetch_dataloader(types, data_dir, params):
+def fetch_dataloader(types, data_dir, params, batch_size):
     """
     Fetches the DataLoader object for each type in types from data_dir.
 
@@ -77,11 +77,11 @@ def fetch_dataloader(types, data_dir, params):
 
             # use the train_transformer if training data, else use eval_transformer without random flip
             if split == 'train':
-                dl = DataLoader(PatchesDataset(path, train_transformer), batch_size=params.batch_size, shuffle=True,
+                dl = DataLoader(PatchesDataset(path, train_transformer), batch_size=batch_size, shuffle=True,
                                         num_workers=params.num_workers,
                                         pin_memory=params.cuda)
             else:
-                dl = DataLoader(PatchesDataset(path, eval_transformer), batch_size=params.batch_size, shuffle=False,
+                dl = DataLoader(PatchesDataset(path, eval_transformer), batch_size=batch_size, shuffle=False,
                                 num_workers=params.num_workers,
                                 pin_memory=params.cuda)
 

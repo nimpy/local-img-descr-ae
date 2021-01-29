@@ -42,7 +42,7 @@ params.cuda = torch.cuda.is_available()
 
 if params.cuda:
     model = model.cuda()
-dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
+dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params, batch_size=32)
 test_dl = dataloaders['test']
 
 counter = 0

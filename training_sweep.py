@@ -242,6 +242,19 @@ def training_sweep():
         json_path), "No json configuration file found at {}".format(json_path)
     params = utilities.Params(json_path)
 
+    use_wandb = True
+
+
+    if use_wandb:
+        wandb_run = wandb.init(config=params)  # TODO wandb project name should be a parameter
+        # wandb.watch(model)
+
+    print("\n\n****************** STARTING A NEW RUN ******************")
+    print('Learning rate:', wandb.config.learning_rate)
+    print('Latent size  :', wandb.config.latent_size)
+    print('Batch size   :', wandb.config.batch_size)
+    print()
+
     # use GPU if available
     params.cuda = torch.cuda.is_available()
 
@@ -250,8 +263,12 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
+    sweep_version = 'sweep_first_proper_ae_bce'  # TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
-    weights_dir = os.path.join(args.weights_dir, "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")) + "_" + weights_filename_suffix
+    model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
+    weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
+
+    Path(os.path.join(args.weights_dir, sweep_version)).mkdir(parents=True, exist_ok=True)
     Path(weights_dir).mkdir(parents=True, exist_ok=True)
 
     # Set the logger
@@ -262,7 +279,7 @@ def training_sweep():
 
     # fetch dataloaders
     dataloaders = data_loader.fetch_dataloader(
-        ['train', 'validation'], args.data_dir, params)
+        ['train', 'validation'], args.data_dir, params, wandb.config.batch_size)
     train_dl = dataloaders['train']
     val_dl = dataloaders['validation']
 
@@ -270,21 +287,16 @@ def training_sweep():
 
     if params.variational:
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
-        model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
+        model = vae.BetaVAE(latent_size=wandb.config.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=wandb.config.latent_size, beta=params.beta)
     else:
-        model = ae.AE(latent_size=params.latent_size).cuda() if params.cuda else ae.AE(latent_size=params.latent_size)
-
-    use_wandb = True
+        model = ae.AE(latent_size=wandb.config.latent_size).cuda() if params.cuda else ae.AE(latent_size=wandb.config.latent_size)
 
     if use_wandb:
-        # wandb.login()
-        wandb_run = wandb.init(project="temp", config=params)  # TODO wandb project name should be a parameter
         wandb.watch(model)
 
     # print(model)
     # summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
-    print("****************** WANDB LEARNING RATE:", wandb.config.learning_rate)
 
     loss_fn = model.loss
     # loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
@@ -294,7 +306,8 @@ def training_sweep():
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
                        weights_dir, args.restore_file, use_wandb)
 
-    wandb.log({"hpatches_overall": np.random.uniform()})
+    # wandb.log({"hpatches_overall": np.random.uniform()})
+    hpatches_benchmark_a_model(model, model_version, use_wandb)
 
     if use_wandb:
         wandb_run.finish()

@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
     # fetch dataloaders
     dataloaders = data_loader.fetch_dataloader(
-        ['train', 'validation'], args.data_dir, params)
+        ['train', 'validation'], args.data_dir, params, batch_size=32)
     train_dl = dataloaders['train']
     val_dl = dataloaders['validation']
 
