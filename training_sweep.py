@@ -26,6 +26,7 @@ import models.ae as ae
 import models.vae as vae
 import data_loader as data_loader
 from metrics import metrics  # TODO
+from hpatches_benchmarking import hpatches_benchmark_a_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
@@ -292,6 +293,8 @@ def training_sweep():
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
                        weights_dir, args.restore_file, use_wandb)
+
+    wandb.log({"hpatches_overall": np.random.uniform()})
 
     if use_wandb:
         wandb_run.finish()

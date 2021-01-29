@@ -7,7 +7,7 @@ if __name__ == '__main__':
         'project': 'temp',
         'metric': {
             'goal': 'minimize',
-            'name': 'loss'
+            'name': 'hpatches_overall'
         },
         'parameters': {
             'learning_rate': {
@@ -18,8 +18,6 @@ if __name__ == '__main__':
             }
         }
     }
-    # wandb.login()
 
     sweep_id = wandb.sweep(sweep_config, project="temp")
-    # sweep_id = '1k2g57ou'
-    wandb.agent(sweep_id, function=training_sweep)  # project='temp'
+    wandb.agent(sweep_id, function=training_sweep)

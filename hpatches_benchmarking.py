@@ -144,7 +144,7 @@ def hpatches_collect_results(model_version, use_wandb):
     logging.info("OVERALL MEAN: " +  str(overall_mean))
 
     if use_wandb:
-        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval, "overall_mean": overall_mean})
+        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval, "hpatches_overall": overall_mean})
 
     return overall_mean
 
