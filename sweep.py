@@ -15,7 +15,7 @@ if __name__ == '__main__':
         },
         'parameters': {
             'learning_rate': {
-                'values': [0.1, 0.01, 0.001, 0.0001, 0.00001]
+                'values': [0.01, 0.001, 0.0001, 0.00001]
             },
             'latent_size': {
                 'values': [32, 64, 128]
@@ -26,7 +26,7 @@ if __name__ == '__main__':
         }
     }
 
-    sweep_version = 'sweep_second_proper_ae_bce'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_first4real_ae_bce'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     sweep_dir = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', sweep_version)
     Path(sweep_dir).mkdir(parents=True, exist_ok=True)
 

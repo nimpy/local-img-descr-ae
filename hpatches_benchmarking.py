@@ -72,6 +72,8 @@ def hpatches_benchmark_a_model(model, model_version, use_wandb):
 def hpatches_extract_encodings(model, model_version):
     encodings_dir = os.path.join(encodings_base_dir, model_version)
 
+    model = model.cpu()
+
     model.eval()
     variational = isinstance(model, vae.BetaVAE)
 

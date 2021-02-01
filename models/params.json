@@ -1,6 +1,6 @@
 {
     "variational": 0,
-    "num_epochs": 10,
+    "num_epochs": 400,
     "save_summary_steps": 100,
     "num_workers": 4,
     "vae_beta_norm": 0.1
