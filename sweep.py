@@ -1,4 +1,8 @@
 import wandb
+import os
+from pathlib import Path
+
+import utilities
 from training_sweep import training_sweep
 
 if __name__ == '__main__':
@@ -21,6 +25,13 @@ if __name__ == '__main__':
             }
         }
     }
+
+    sweep_version = 'sweep_second_proper_ae_bce'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_dir = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', sweep_version)
+    Path(sweep_dir).mkdir(parents=True, exist_ok=True)
+
+    # Set the logger
+    utilities.set_logger(os.path.join(sweep_dir, 'train.log'))
 
     sweep_id = wandb.sweep(sweep_config, project="local-img-descr-ae")  # TODO!!!
     wandb.agent(sweep_id, function=training_sweep)

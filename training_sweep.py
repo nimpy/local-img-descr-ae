@@ -249,11 +249,11 @@ def training_sweep():
         wandb_run = wandb.init(config=params)  # TODO wandb project name should be a parameter
         # wandb.watch(model)
 
-    print("\n\n****************** STARTING A NEW RUN ******************")
-    print('Learning rate:', wandb.config.learning_rate)
-    print('Latent size  :', wandb.config.latent_size)
-    print('Batch size   :', wandb.config.batch_size)
-    print()
+    logging.info("\n\n****************** STARTING A NEW RUN ******************")
+    logging.info('Learning rate: ' + str(wandb.config.learning_rate))
+    logging.info('Latent size  : ' + str(wandb.config.latent_size))
+    logging.info('Batch size   : ' + str(wandb.config.batch_size))
+    logging.info("")
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()
@@ -263,7 +263,7 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_first_proper_ae_bce'  # TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_second_proper_ae_bce'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
@@ -271,8 +271,8 @@ def training_sweep():
     Path(os.path.join(args.weights_dir, sweep_version)).mkdir(parents=True, exist_ok=True)
     Path(weights_dir).mkdir(parents=True, exist_ok=True)
 
-    # Set the logger
-    utilities.set_logger(os.path.join(weights_dir, 'train.log'))
+    # # Set the logger
+    # utilities.set_logger(os.path.join(weights_dir, 'train.log'))
 
     # Create the input data pipeline
     logging.info("Loading the datasets...")
