@@ -266,11 +266,14 @@ if __name__ == '__main__':
 
     logging.info("- done.")
 
+    activation_str = 'elu'
+    loss_str = 'bce'
+
     if params.variational:
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
         model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
     else:
-        model = ae.AE(latent_size=params.latent_size, activation_str='elu', loss_str='bce').cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str='elu', loss_str='bce')
+        model = ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
 
     # print(model)
     summary(model, (1, 64, 64))
