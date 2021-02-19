@@ -16,8 +16,6 @@ from pathlib import Path
 import sys
 sys.path.append('/scratch/cloned_repositories/torch-summary')
 from torchsummary import summary
-sys.path.append('/scratch/cloned_repositories/pytorch-msssim')
-from pytorch_msssim import msssim
 
 import wandb
 
@@ -242,7 +240,7 @@ def training_sweep():
         json_path), "No json configuration file found at {}".format(json_path)
     params = utilities.Params(json_path)
 
-    use_wandb = True
+    use_wandb = False  # TODO!
 
 
     if use_wandb:
@@ -263,7 +261,7 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_first4real_ae_bce'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_second'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
