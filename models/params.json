@@ -1,7 +1,10 @@
 {
     "variational": 0,
-    "num_epochs": 400,
+    "batch_size": 32,
+    "num_epochs": 2,
     "save_summary_steps": 100,
     "num_workers": 4,
-    "vae_beta_norm": 0.1
+    "latent_size": 128,
+    "vae_beta_norm": 0.1,
+    "learning_rate": 0.0001
 }

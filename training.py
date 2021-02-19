@@ -270,7 +270,7 @@ if __name__ == '__main__':
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
         model = vae.BetaVAE(latent_size=params.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, beta=params.beta)
     else:
-        model = ae.AE(latent_size=params.latent_size).cuda() if params.cuda else ae.AE(latent_size=params.latent_size)
+        model = ae.AE(latent_size=params.latent_size, activation_str='elu', loss_str='bce').cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str='elu', loss_str='bce')
 
     # print(model)
     summary(model, (1, 64, 64))
@@ -283,8 +283,8 @@ if __name__ == '__main__':
         wandb_run = wandb.init(project="vae-descr", config=params)  # TODO wandb project name should be a parameter
         wandb.watch(model)
 
-    # loss_fn = model.loss
-    loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
+    loss_fn = model.loss
+    # loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
