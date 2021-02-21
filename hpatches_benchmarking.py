@@ -11,10 +11,17 @@ import dill
 import json
 from tabulate import tabulate as tb
 
+from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import peak_signal_noise_ratio as psnr
+from skimage.metrics import mean_squared_error as mse
+
+from torch.autograd import Variable
+
 import models.ae as ae
 import models.vae as vae
 from utilities import default_to_regular_dict, pretty_dict
 import utilities
+import data_loader
 
 import sys
 sys.path.append('/scratch/cloned_repositories/hpatches-benchmark/python')
@@ -57,6 +64,10 @@ class HPatchesSequence:
 
 def hpatches_benchmark_a_model(model, model_version, use_wandb):
 
+    logging.info("===== Calculating MSE, SSIM, and PSNR metrics =====")
+    mse, ssim, psnr = calculate_metrics_on_test_set(model)
+    logging.info("... they are, respectively: " + str(mse) + ', ' + str(ssim) + ', ' + str(psnr))
+
     logging.info("===== Extracting the encodings using the descriptor =====")
     hpatches_extract_encodings(model, model_version)
 
@@ -64,9 +75,61 @@ def hpatches_benchmark_a_model(model, model_version, use_wandb):
     hpatches_eval_on_all_tasks(model_version)
 
     logging.info("\n===== Collecting the results from tasks =====")
-    overall_mean = hpatches_collect_results(model_version, use_wandb)
+    result_verification, result_matching, result_retrieval, overall_mean = hpatches_collect_results(model_version)
+
+    if use_wandb:
+        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval,
+                   "hpatches_overall": overall_mean, "mse": mse, "ssim": ssim, "psnr": psnr})
 
     return overall_mean
+
+
+# some code copied from quick_testing.py
+def calculate_metrics_on_test_set(model):
+
+    params = utilities.Params('models/params.json')
+    params.cuda = torch.cuda.is_available()
+    
+    dataloaders = data_loader.fetch_dataloader(['test'], '/scratch/image_datasets/3_65x65/ready', params, batch_size=32)
+    test_dl = dataloaders['test']
+
+    counter = 0
+    diff_mse_cum = 0
+    diff_ssim_cum = 0
+    diff_psnr_cum = 0
+
+    model.eval()
+
+    for data_batch in test_dl:
+
+        data_batch = data_batch.cuda(non_blocking=True)
+        data_batch = Variable(data_batch)
+
+        output_batch = model(data_batch)
+
+        data_batch = data_batch.cpu().numpy()
+        output_batch = output_batch.detach().cpu().numpy()
+
+        counter += data_batch.shape[0]
+
+        for i in range(output_batch.shape[0]):
+            diff_mse = mse(data_batch[i], output_batch[i])
+            diff_mse_cum += diff_mse
+
+            dr_max = max(data_batch[i].max(), output_batch[i].max())
+            dr_min = min(data_batch[i].min(), output_batch[i].min())
+
+            diff_ssim = ssim(data_batch[i, 0], output_batch[i, 0], data_range=dr_max - dr_min)
+            diff_ssim_cum += diff_ssim
+
+            diff_psnr = psnr(data_batch[i, 0], output_batch[i, 0], data_range=dr_max - dr_min)
+            diff_psnr_cum += diff_psnr
+
+    diff_mse_average = diff_mse_cum / counter
+    diff_ssim_average = diff_ssim_cum / counter
+    diff_psnr_average = diff_psnr_cum / counter
+
+    return diff_mse_average, diff_ssim_average, diff_psnr_average
 
 
 def hpatches_extract_encodings(model, model_version):
@@ -121,7 +184,7 @@ def hpatches_eval_on_all_tasks(model_version):
         dill.dump(res, open(results_path, "wb"))
 
 
-def hpatches_collect_results(model_version, use_wandb):
+def hpatches_collect_results(model_version):
     result_verification = results_verification(model_version, split_c)
     logging.info("\n")
     result_matching = results_matching(model_version, split_c)
@@ -145,10 +208,7 @@ def hpatches_collect_results(model_version, use_wandb):
     overall_mean = np.mean(np.array([mean_verification, mean_matching, mean_retrieval]))
     logging.info("OVERALL MEAN: " +  str(overall_mean))
 
-    if use_wandb:
-        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval, "hpatches_overall": overall_mean})
-
-    return overall_mean
+    return result_verification, result_matching, result_retrieval, overall_mean
 
 
 # taken and adjusted from:
@@ -268,11 +328,12 @@ def results_retrieval(desc, splt):
 
 if __name__ == '__main__':
 
-    model_version = 'vae_20201212_100238'  # 'ae_20201207_143916'  # vae_20201212_100238
+    model_version = 'weights_20210121_113349_ae'  # 'ae_20201207_143916'  # vae_20201212_100238
     weights_path = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version, 'best.pth.tar')
 
-    model = vae.BetaVAE(128)  # ae.AE()
+    model = ae.AE()  # vae.BetaVAE(128)  # ae.AE()
     model.load_state_dict(torch.load(weights_path)['state_dict'])
+    model = model.cuda()
 
     utilities.set_logger(os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version,
                                       'hpatches_benchmarking_' + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + '.log'))
