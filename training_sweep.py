@@ -240,7 +240,7 @@ def training_sweep():
         json_path), "No json configuration file found at {}".format(json_path)
     params = utilities.Params(json_path)
 
-    use_wandb = False  # TODO!
+    use_wandb = True  # TODO!
 
 
     if use_wandb:
@@ -248,9 +248,17 @@ def training_sweep():
         # wandb.watch(model)
 
     logging.info("\n\n****************** STARTING A NEW RUN ******************")
-    logging.info('Learning rate: ' + str(wandb.config.learning_rate))
-    logging.info('Latent size  : ' + str(wandb.config.latent_size))
-    logging.info('Batch size   : ' + str(wandb.config.batch_size))
+    logging.info('Data augmentation level: ' + str(wandb.config.data_augm_level))
+    logging.info('Activation function    : ' + str(wandb.config.activation_fn))
+    logging.info('Loss function          : ' + str(wandb.config.loss_fn))
+    logging.info('Learning rate          : ' + str(wandb.config.learning_rate))
+    logging.info("")
+
+    latent_size = 32  # args.latent_size  # 32  # wandb.config.latent_size
+    batch_size = 32  # args.batch_size # 32  # wandb.config.batch_size
+    logging.info('Other params (that are not being swept)')
+    logging.info('    Latent size:' + str(latent_size))
+    logging.info('    Batch size :' + str(batch_size))
     logging.info("")
 
     # use GPU if available
@@ -261,7 +269,7 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_second'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_2nd_ae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
@@ -272,22 +280,31 @@ def training_sweep():
     # # Set the logger
     # utilities.set_logger(os.path.join(weights_dir, 'train.log'))
 
+    rotation_deg = 10 * wandb.config.data_augm_level
+    translation = 0.1 * wandb.config.data_augm_level
+    scaling = 1.0 + 0.1 * wandb.config.data_augm_level
+    shearing_deg = 10 * wandb.config.data_augm_level
+
     # Create the input data pipeline
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    dataloaders = data_loader.fetch_dataloader(
-        ['train', 'validation'], args.data_dir, params, wandb.config.batch_size)
+    dataloaders = data_loader.fetch_dataloader(['train', 'validation'], args.data_dir, params, batch_size,
+                                               rotation_deg=rotation_deg, translation=translation,
+                                               scaling=scaling, shearing_deg=shearing_deg)
     train_dl = dataloaders['train']
     val_dl = dataloaders['validation']
 
     logging.info("- done.")
 
+
+    # TODO for VAE (incl. this other TODO)
     if params.variational:
         params.beta = params.vae_beta_norm * 32  # 32 = input size / latent size; TODO generalise it
-        model = vae.BetaVAE(latent_size=wandb.config.latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=wandb.config.latent_size, beta=params.beta)
+        model = vae.BetaVAE(latent_size=latent_size, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=latent_size, beta=params.beta)
     else:
-        model = ae.AE(latent_size=wandb.config.latent_size).cuda() if params.cuda else ae.AE(latent_size=wandb.config.latent_size)
+        model = ae.AE(latent_size=latent_size, activation_str=wandb.config.activation_fn, loss_str=wandb.config.loss_fn).cuda() if params.cuda \
+            else ae.AE(latent_size=latent_size, activation_str=wandb.config.activation_fn, loss_str=wandb.config.loss_fn)
 
     if use_wandb:
         wandb.watch(model)
@@ -297,7 +314,6 @@ def training_sweep():
     optimizer = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
 
     loss_fn = model.loss
-    # loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))

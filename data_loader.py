@@ -5,19 +5,6 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 import torch
 
-# define a training image loader that specifies transforms on images. See documentation for more details.
-train_transformer = transforms.Compose([
-    transforms.CenterCrop(64),
-    # transforms.Resize(64),  # resize the image to 64x64 (remove if images are already 64x64)
-    # transforms.RandomHorizontalFlip(),  # randomly flip image horizontally
-    transforms.ToTensor()])  # transform it into a torch tensor
-
-# loader for evaluation, no horizontal flip
-eval_transformer = transforms.Compose([
-    transforms.CenterCrop(64),
-    # transforms.Resize(64),  # resize the image to 64x64 (remove if images are already 64x64)
-    transforms.ToTensor()])  # transform it into a torch tensor
-
 
 class PatchesDataset(Dataset):
     """
@@ -57,7 +44,7 @@ class PatchesDataset(Dataset):
         return image#, self.labels[idx]
 
 
-def fetch_dataloader(types, data_dir, params, batch_size):
+def fetch_dataloader(types, data_dir, params, batch_size, rotation_deg=0, translation=0, scaling=1, shearing_deg=0):
     """
     Fetches the DataLoader object for each type in types from data_dir.
 
@@ -69,6 +56,19 @@ def fetch_dataloader(types, data_dir, params, batch_size):
     Returns:
         data: (dict) contains the DataLoader object for each type in types
     """
+
+    # define a training image loader that specifies transforms on images. See documentation for more details.
+    train_transformer = transforms.Compose([
+        transforms.CenterCrop(64),
+        transforms.RandomAffine(rotation_deg, translate=(translation, translation), scale=(1.0, scaling), shear=shearing_deg),
+        # transforms.Resize(64),  # resize the image to 64x64 (remove if images are already 64x64)
+        transforms.ToTensor()])  # transform it into a torch tensor
+
+    # loader for evaluation, no horizontal flip
+    eval_transformer = transforms.Compose([
+        transforms.CenterCrop(64),
+        transforms.ToTensor()])  # transform it into a torch tensor
+
     dataloaders = {}
 
     for split in ['train', 'validation', 'test']:

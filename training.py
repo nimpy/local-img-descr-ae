@@ -258,9 +258,16 @@ if __name__ == '__main__':
     # Create the input data pipeline
     logging.info("Loading the datasets...")
 
+    data_augm_level = 3
+    rotation_deg = 10 * data_augm_level
+    translation = 0.1 * data_augm_level
+    scaling = 1.0 + 0.1 * data_augm_level
+    shearing_deg = 10 * data_augm_level
+
     # fetch dataloaders
-    dataloaders = data_loader.fetch_dataloader(
-        ['train', 'validation'], args.data_dir, params, batch_size=32)
+    dataloaders = data_loader.fetch_dataloader(['train', 'validation'], args.data_dir, params, batch_size=32,
+                                               rotation_deg=rotation_deg, translation=translation,
+                                               scaling=scaling, shearing_deg=shearing_deg)
     train_dl = dataloaders['train']
     val_dl = dataloaders['validation']
 
