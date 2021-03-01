@@ -1,7 +1,7 @@
 {
-    "variational": 0,
+    "variational": 1,
     "batch_size": 32,
-    "num_epochs": 400,
+    "num_epochs": 200,
     "save_summary_steps": 100,
     "num_workers": 4,
     "latent_size": 32,

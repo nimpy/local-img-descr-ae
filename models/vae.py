@@ -3,9 +3,13 @@ import torch.nn.functional as F
 import torch
 import pdb
 
+import sys
+sys.path.append('/scratch/cloned_repositories/pytorch-msssim')
+from pytorch_msssim import msssim
+
 
 class BetaVAE(nn.Module):
-    def __init__(self, latent_size=128, beta=0.001):
+    def __init__(self, latent_size=128, activation_str='elu', loss_str='bce', beta=0.001):
         super(BetaVAE, self).__init__()
 
         self.latent_size = latent_size
@@ -31,12 +35,19 @@ class BetaVAE(nn.Module):
         self.t_conv2 = nn.ConvTranspose2d(32, 32, 2, stride=2)
         self.t_conv3 = nn.ConvTranspose2d(32, 1, 2, stride=2)
 
+        if activation_str.lower() == 'elu':
+            self.activation = F.elu
+        elif activation_str.lower() == 'relu':
+            self.activation = F.relu
+        else:
+            raise NotImplementedError
+
     def encode(self, x):
-        x = F.elu(self.conv1(self.zeropad1(x)))
+        x = self.activation(self.conv1(self.zeropad1(x)))
         x = self.pool1(x)
-        x = F.elu(self.conv2(self.zeropad2(x)))
+        x = self.activation(self.conv2(self.zeropad2(x)))
         x = self.pool2(x)
-        x = F.elu(self.conv3(self.zeropad3(x)))
+        x = self.activation(self.conv3(self.zeropad3(x)))
         x = self.pool3(x)
 
         x = x.view(-1, 2048)
@@ -55,8 +66,8 @@ class BetaVAE(nn.Module):
         z = self.fc_z(z)
         z = z.view(-1, 32, 8, 8)
 
-        rx = F.elu(self.t_conv1(z))
-        rx = F.elu(self.t_conv2(rx))
+        rx = self.activation(self.t_conv1(z))
+        rx = self.activation(self.t_conv2(rx))
         rx = torch.sigmoid(self.t_conv3(rx))
 
         return rx
