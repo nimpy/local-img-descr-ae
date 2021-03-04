@@ -94,9 +94,9 @@ class BetaVAE(nn.Module):
 
 
         # loss1 = (recon_loss1 + self.beta * kl_diverge1) / x.shape[0]
-        loss2 = recon_loss2 + (self.beta * kl_diverge2) / 4096  # h * w * c
+        loss2 = recon_loss2 + (self.beta * kl_diverge2) / (x.shape[1] * x.shape[2] * x.shape[3])  # c * h * w
 
         return loss2
-        # return (recon_loss + self.beta * kl_diverge) / x.shape[0]  # divide total loss by batch size
-        # return recon_loss + self.beta * kl_diverge
+        # loss1 and loss2 will produce the same results, but loss2 is normalised
+        # (in order to be able to replace BCE with MSSSIM for example)
 
