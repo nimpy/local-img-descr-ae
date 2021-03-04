@@ -30,10 +30,10 @@ parser.add_argument('--restore_file', default=None,
                     training")  # 'best' or 'train'
 
 args = parser.parse_args()
-weights_path = os.path.join(args.weights_dir, 'weights_20210121_113349_ae/best.pth.tar')
+weights_path = os.path.join(args.weights_dir, 'weights_20210304_140125_vae/best.pth.tar')
 json_path = os.path.join(args.model_dir, 'params.json')
 
-model = AE()#BetaVAE(128)#AE()
+model = BetaVAE(32)#AE()
 model.load_state_dict(torch.load(weights_path)['state_dict'])
 model.eval()
 
@@ -58,7 +58,7 @@ for data_batch in test_dl:
 
     data_batch = Variable(data_batch)
 
-    output_batch = model(data_batch)
+    output_batch, _, _ = model(data_batch)  # , _, _
 
     data_batch = data_batch.cpu().numpy()
     plt.imshow(data_batch[0][0], cmap='gray')

@@ -258,7 +258,7 @@ if __name__ == '__main__':
     # Create the input data pipeline
     logging.info("Loading the datasets...")
 
-    data_augm_level = 3
+    data_augm_level = 1
     rotation_deg = 10 * data_augm_level
     translation = 0.1 * data_augm_level
     scaling = 1.0 + 0.1 * data_augm_level
