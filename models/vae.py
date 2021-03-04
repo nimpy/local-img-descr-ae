@@ -78,28 +78,25 @@ class BetaVAE(nn.Module):
         return rx, mu, logvar
 
     def loss(self, recon_x, x, mu, logvar):
-        # reconstruction losses are summed over all elements and batch
-        # recon_loss = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        # recon_loss = 1 + msssim(recon_x, x) * 4096
-        recon_loss = F.binary_cross_entropy(recon_x, x)
 
-        # temp_recon_loss1 = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        # temp_recon_loss2 = F.binary_cross_entropy(recon_x, x)
-        # print('         ', temp_recon_loss1.item(), '         ', temp_recon_loss2.item())
+        # recon_loss1 = F.binary_cross_entropy(recon_x, x, reduction='sum')
+        recon_loss2 = F.binary_cross_entropy(recon_x, x)
 
-        # see Appendix B from VAE paper:
-        # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-        # https://arxiv.org/abs/1312.6114
-        # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-        # kl_diverge = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        # print()
+        #             _                   _                             131072 == batch_size * h * w * c
+        # print('    ', recon_loss1.item(), recon_loss2.item(), '      ', (recon_loss1 / recon_loss2).item())
 
-        kl_diverge = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
+        # kl_diverge1 = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        kl_diverge2 = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        # print(self.beta, recon_loss.item() / x.shape[0], (self.beta * kl_diverge.item()) / x.shape[0])
-        # loss = recon_loss + (32/100000) * kl_diverge
-        # print('         ', recon_loss.item(), kl_diverge.item(), loss.item())
+        #             _                   _                             32 == batch_size
+        # print('    ', kl_diverge1.item(), kl_diverge2.item(), '      ', (kl_diverge1 / kl_diverge2).item())
 
-        # return loss
-        return recon_loss + self.beta * kl_diverge  # divide total loss by batch size
+
+        # loss1 = (recon_loss1 + self.beta * kl_diverge1) / x.shape[0]
+        loss2 = recon_loss2 + (self.beta * kl_diverge2) / 4096  # h * w * c
+
+        return loss2
         # return (recon_loss + self.beta * kl_diverge) / x.shape[0]  # divide total loss by batch size
+        # return recon_loss + self.beta * kl_diverge
 
