@@ -42,6 +42,13 @@ class BetaVAE(nn.Module):
         else:
             raise NotImplementedError
 
+        if loss_str.lower() == 'bce':
+            self.recon_loss = BetaVAE.recon_loss_bce
+        elif loss_str.lower() == 'msssim':
+            self.recon_loss = BetaVAE.recon_loss_msssim
+        else:
+            raise NotImplementedError
+
     def encode(self, x):
         x = self.activation(self.conv1(self.zeropad1(x)))
         x = self.pool1(x)
@@ -78,25 +85,16 @@ class BetaVAE(nn.Module):
         return rx, mu, logvar
 
     def loss(self, recon_x, x, mu, logvar):
+        recon_term = self.recon_loss(recon_x, x)
+        kld_term = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
+        loss = recon_term + (self.beta * kld_term) / (x.shape[1] * x.shape[2] * x.shape[3])
+        return loss
 
-        # recon_loss1 = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        recon_loss2 = F.binary_cross_entropy(recon_x, x)
+    @staticmethod
+    def recon_loss_bce(recon_x, x):
+        return F.binary_cross_entropy(recon_x, x)
 
-        # print()
-        #             _                   _                             131072 == batch_size * h * w * c
-        # print('    ', recon_loss1.item(), recon_loss2.item(), '      ', (recon_loss1 / recon_loss2).item())
-
-        # kl_diverge1 = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        kl_diverge2 = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
-
-        #             _                   _                             32 == batch_size
-        # print('    ', kl_diverge1.item(), kl_diverge2.item(), '      ', (kl_diverge1 / kl_diverge2).item())
-
-
-        # loss1 = (recon_loss1 + self.beta * kl_diverge1) / x.shape[0]
-        loss2 = recon_loss2 + (self.beta * kl_diverge2) / (x.shape[1] * x.shape[2] * x.shape[3])  # c * h * w
-
-        return loss2
-        # loss1 and loss2 will produce the same results, but loss2 is normalised
-        # (in order to be able to replace BCE with MSSSIM for example)
+    @staticmethod
+    def recon_loss_msssim(recon_x, x):
+        return 1 + msssim(recon_x, x)
 
