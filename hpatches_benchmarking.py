@@ -90,7 +90,9 @@ def calculate_metrics_on_test_set(model):
 
     params = utilities.Params('models/params.json')
     params.cuda = torch.cuda.is_available()
-    
+
+    variational = isinstance(model, vae.BetaVAE)
+
     dataloaders = data_loader.fetch_dataloader(['test'], '/scratch/image_datasets/3_65x65/ready', params, batch_size=32)
     test_dl = dataloaders['test']
 
@@ -106,7 +108,10 @@ def calculate_metrics_on_test_set(model):
         data_batch = data_batch.cuda(non_blocking=True)
         data_batch = Variable(data_batch)
 
-        output_batch = model(data_batch)
+        if variational:
+            output_batch, _, _ = model(data_batch)
+        else:
+            output_batch = model(data_batch)
 
         data_batch = data_batch.cpu().numpy()
         output_batch = output_batch.detach().cpu().numpy()
