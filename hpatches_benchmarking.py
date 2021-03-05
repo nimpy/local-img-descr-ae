@@ -68,20 +68,21 @@ def hpatches_benchmark_a_model(model, model_version, use_wandb):
     mse, ssim, psnr = calculate_metrics_on_test_set(model)
     logging.info("... they are, respectively: " + str(mse) + ', ' + str(ssim) + ', ' + str(psnr))
 
-    logging.info("===== Extracting the encodings using the descriptor =====")
-    hpatches_extract_encodings(model, model_version)
-
-    logging.info("\n===== Evaluating the descriptor on all tasks =====")
-    hpatches_eval_on_all_tasks(model_version)
-
-    logging.info("\n===== Collecting the results from tasks =====")
-    result_verification, result_matching, result_retrieval, overall_mean = hpatches_collect_results(model_version)
+    # logging.info("===== Extracting the encodings using the descriptor =====")
+    # hpatches_extract_encodings(model, model_version)
+    #
+    # logging.info("\n===== Evaluating the descriptor on all tasks =====")
+    # hpatches_eval_on_all_tasks(model_version)
+    #
+    # logging.info("\n===== Collecting the results from tasks =====")
+    # result_verification, result_matching, result_retrieval, overall_mean = hpatches_collect_results(model_version)
 
     if use_wandb:
-        wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval,
-                   "hpatches_overall": overall_mean, "mse": mse, "ssim": ssim, "psnr": psnr})
+        # wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval,
+        #            "hpatches_overall": overall_mean, "mse": mse, "ssim": ssim, "psnr": psnr})
+        wandb.log({"mse": mse, "ssim": ssim, "psnr": psnr})
 
-    return overall_mean
+    return ssim  # overall_mean
 
 
 # some code copied from quick_testing.py
