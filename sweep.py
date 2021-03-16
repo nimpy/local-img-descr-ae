@@ -15,7 +15,7 @@ if __name__ == '__main__':
         },
         'parameters': {
             'data_augm_level': {
-                'values': [0, 1, 2, 3]
+                'values': [0]#, 1, 2, 3]
             },
             'activation_fn': {
                 'values': ['elu', 'relu']
@@ -23,19 +23,19 @@ if __name__ == '__main__':
             'loss_fn': {
                 'values': ['bce', 'msssim']
             },
-            'vae_beta_norm': {
-                'values': [0.01, 0.001, 0.0001, 0.00001]
-            }#,
-            # 'learning_rate': {
-            #     'values': [0.01, 0.0001]
-            # },
+            # 'vae_beta_norm': {
+            #     'values': [0.01, 0.001, 0.0001, 0.00001]
+            # }#,
+            'learning_rate': {
+                'values': [0.01, 0.0001]
+            },
             # 'batch_size': {
             #     'values': [32, 64, 128]
             # }
         }
     }
 
-    sweep_version = 'sweep_3rd_vae_latent32_batch32_200epochs'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_4th_ae_latent32_batch32_dataaugm0'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     sweep_dir = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', sweep_version)
     Path(sweep_dir).mkdir(parents=True, exist_ok=True)
 

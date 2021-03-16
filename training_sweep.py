@@ -251,7 +251,8 @@ def training_sweep():
     logging.info('Data augmentation level: ' + str(wandb.config.data_augm_level))
     logging.info('Activation function    : ' + str(wandb.config.activation_fn))
     logging.info('Loss function          : ' + str(wandb.config.loss_fn))
-    logging.info('Beta value (normalised): ' + str(wandb.config.vae_beta_norm))
+    # logging.info('Beta value (normalised): ' + str(wandb.config.vae_beta_norm))
+    logging.info('Learning rate : ' + str(wandb.config.learning_rate))
     logging.info("")
 
     latent_size = 32  # args.latent_size  # 32  # wandb.config.latent_size
@@ -269,7 +270,7 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_3rd_vae_latent32_batch32_200epochs'  # 'sweep_3rd_vae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_4th_ae_latent32_batch32_dataaugm0'  # 'sweep_3rd_vae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
@@ -297,8 +298,6 @@ def training_sweep():
 
     logging.info("- done.")
 
-
-    # TODO for VAE (incl. this other TODO)
     if params.variational:
         params.beta = wandb.config.vae_beta_norm * (4096 / latent_size)  # input size / latent size = 4096 / latent_size; TODO generalise it
         model = vae.BetaVAE(latent_size=latent_size, activation_str=wandb.config.activation_fn, loss_str=wandb.config.loss_fn, beta=params.beta).cuda() if params.cuda \
@@ -312,7 +311,7 @@ def training_sweep():
 
     # print(model)
     # summary(model, (1, 64, 64))
-    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)  # TODO params.learning_rate ?
 
     loss_fn = model.loss
 
