@@ -270,7 +270,7 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_4th_ae_latent32_batch32_dataaugm0'  # 'sweep_3rd_vae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_XXXX'  # 'sweep_3rd_vae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
