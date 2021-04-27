@@ -10,8 +10,22 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--weights_dir', default='/scratch/image_datasets/3_65x65/ready/weights',
                     help="Directory where weights will be saved")
 
-# I made this csv file by downloading csv files from different wandb sweeps and uniting them all into one csv file
-sweep_df = pd.read_csv('/home/niaki/Downloads/1Sweep2RuleEmALL.csv')
+
+def load_sweep_csv(filepath):
+
+    # I made this csv file by downloading csv files from different wandb sweeps and uniting them all into one csv file
+    df = pd.read_csv(filepath)
+
+    # replace . with _ in the column names so that pandas doesn't rename the columns
+    new_columns = df.columns.values
+    for i, column in enumerate(new_columns):
+        new_column = column.replace('.', '_')
+        new_columns[i] = new_column
+    df.columns = new_columns
+    return df
+
+
+sweep_df = load_sweep_csv('/home/niaki/Downloads/1Sweep2RuleEmALL.csv')
 
 
 def find_row_with_inputs(activation_fn, data_augm_level, loss_fn, vae_beta_norm):
@@ -47,7 +61,15 @@ def sweep_one_sweep_to_rule_them_all():
     logging.info('    Batch size :' + str(batch_size))
     logging.info("")
 
-    sweep_version = 'sweep__one_sweep_to_rule_them_all_v0'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    wandb.config.variational = wandb.config.vae_beta_norm > 0.0000001
+    wandb.config.latent_size = latent_size
+    wandb.config.batch_size = batch_size
+    wandb.config.num_workers = 4
+    wandb.config.vae_or_ae = "vae" if wandb.config.vae_beta_norm > 0.0000001 else "ae"
+    # wandb.config.learning_rate == 0.0001
+    # wandb.config.num_epochs = 200  #
+
+    sweep_version = 'sweep__one_sweep_to_rule_them_all_v1'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
     # model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_AEorVAE"
     # weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
 
