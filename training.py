@@ -24,6 +24,7 @@ import wandb
 import utilities
 import models.ae as ae
 import models.vae as vae
+import models.ae_ir as ae_ir
 import data_loader as data_loader
 from metrics import metrics  # TODO
 
@@ -273,14 +274,27 @@ if __name__ == '__main__':
 
     logging.info("- done.")
 
-    activation_str = 'elu'
-    loss_str = 'bce'
+    activation_str = 'relu'
+    loss_str = 'msssim'
+    params.vae_beta_norm = 0.00001
 
-    if params.variational:
-        params.beta = params.vae_beta_norm * (4096 / params.latent_size)  # input size / latent size = 4096 / latent_size; TODO generalise it
-        model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta)
-    else:
-        model = ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
+    # if params.variational:
+    #     params.beta = params.vae_beta_norm * (4096 / params.latent_size)  # input size / latent size = 4096 / latent_size; TODO generalise it
+    #     model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta)
+    # else:
+    #     model = ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
+
+    # model = ae_ir.AE_IR(latent_size=params.latent_size, activation_str=activation_str,
+    #               loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size,
+    #               activation_str=activation_str, loss_str=loss_str)
+
+    params.beta = params.vae_beta_norm * (4096 / params.latent_size)
+    model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str,
+                        beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size,
+                                                                                 activation_str=activation_str,
+                                                                                 loss_str=loss_str, beta=params.beta)
+
+
 
     # print(model)
     summary(model, (1, 64, 64))
@@ -290,11 +304,10 @@ if __name__ == '__main__':
 
     if use_wandb:
         wandb.login()
-        wandb_run = wandb.init(project="vae-descr", config=params)  # TODO wandb project name should be a parameter
+        wandb_run = wandb.init(project="temp", config=params)  # TODO wandb project name should be a parameter
         wandb.watch(model)
 
     loss_fn = model.loss
-    # loss_fn = msssim  # TODO: figure out how to <strekethrough>use</strekethrough> parametrise relu normalisation
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
