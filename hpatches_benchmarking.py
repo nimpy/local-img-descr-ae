@@ -19,6 +19,9 @@ from torch.autograd import Variable
 
 import models.ae as ae
 import models.vae as vae
+import models.ae_ir as ae_ir
+import models.vae_ir as vae_ir
+
 from utilities import default_to_regular_dict, pretty_dict
 import utilities
 import data_loader
@@ -91,7 +94,7 @@ def calculate_metrics_on_test_set(model):
     params = utilities.Params('models/params.json')
     params.cuda = torch.cuda.is_available()
 
-    variational = isinstance(model, vae.BetaVAE)
+    variational = isinstance(model, vae.BetaVAE) or isinstance(model, vae_ir.BetaVAE)
 
     dataloaders = data_loader.fetch_dataloader(['test'], '/scratch/image_datasets/3_65x65/ready', params, batch_size=32)
     test_dl = dataloaders['test']
@@ -144,7 +147,7 @@ def hpatches_extract_encodings(model, model_version):
     model = model.cpu()
 
     model.eval()
-    variational = isinstance(model, vae.BetaVAE)
+    variational = isinstance(model, vae.BetaVAE) or isinstance(model, vae_ir.BetaVAE)
 
     for seq_path in hpatches_seqs:
         seq = HPatchesSequence(seq_path)
@@ -334,10 +337,10 @@ def results_retrieval(desc, splt):
 
 if __name__ == '__main__':
 
-    model_version = 'weights_20210121_113349_ae'  # 'ae_20201207_143916'  # vae_20201212_100238
+    model_version = 'weights_20210428_101801_vae'  # 'ae_20201207_143916'  # vae_20201212_100238
     weights_path = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version, 'best.pth.tar')
 
-    model = ae.AE()  # vae.BetaVAE(128)  # ae.AE()
+    model = vae_ir.BetaVAE(latent_size=32, activation_str='relu', loss_str='msssim', beta=0.00001)  # vae.BetaVAE(128)  # ae.AE()
     model.load_state_dict(torch.load(weights_path)['state_dict'])
     model = model.cuda()
 
