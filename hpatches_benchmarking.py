@@ -69,7 +69,7 @@ class HPatchesSequence:
 def hpatches_benchmark_a_model(model, model_version, use_wandb):
 
     logging.info("===== Calculating MSE, SSIM, and PSNR metrics =====")
-    mse, ssim, psnr = calculate_metrics_on_test_set(model)
+    mse, ssim, psnr = calculate_approximate_evaluation_metrics_on_test_set(model)
     logging.info("... they are, respectively: " + str(mse) + ', ' + str(ssim) + ', ' + str(psnr))
 
     logging.info("===== Extracting the encodings using the descriptor =====")
@@ -88,8 +88,8 @@ def hpatches_benchmark_a_model(model, model_version, use_wandb):
     return overall_mean
 
 
-# some code copied from quick_testing.py
-def calculate_metrics_on_test_set(model):
+# some code copied from fast_approximate_evaluation.py
+def calculate_approximate_evaluation_metrics_on_test_set(model):
 
     params = utilities.Params('models/params.json')
     params.cuda = torch.cuda.is_available()
