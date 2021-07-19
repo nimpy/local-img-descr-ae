@@ -33,8 +33,9 @@ from utils.hpatch import load_descrs
 
 
 hpatches_types = ['ref','e1','e2','e3','e4','e5','h1','h2','h3','h4','h5','t1','t2','t3','t4','t5']
-ft = {'e': 'Easy', 'h': 'Hard', 't': 'Tough'}  # TODO: rename
+ft = {'e': 'Easy', 'h': 'Hard', 't': 'Tough'}
 
+# ugly local paths...
 with open(os.path.join("/scratch/cloned_repositories/hpatches-benchmark/python/utils", "splits.json")) as f:
     splits = json.load(f)
 split_c = splits['c']
@@ -83,7 +84,6 @@ def hpatches_benchmark_a_model(model, model_version, use_wandb):
     if use_wandb:
         wandb.log({"verification": result_verification, "matching": result_matching, "retrieval": result_retrieval,
                    "hpatches_overall": overall_mean, "mse": mse, "ssim": ssim, "psnr": psnr})
-        # wandb.log({"mse": mse, "ssim": ssim, "psnr": psnr})
 
     return overall_mean
 
@@ -335,28 +335,4 @@ def results_retrieval(desc, splt):
     return mAP
 
 
-if __name__ == '__main__':
-
-    model_version = 'weights_20210428_101801_vae'  # 'ae_20201207_143916'  # vae_20201212_100238
-    weights_path = os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version, 'best.pth.tar')
-
-    model = vae_ir.BetaVAE(latent_size=32, activation_str='relu', loss_str='msssim', beta=0.00001)  # vae.BetaVAE(128)  # ae.AE()
-    model.load_state_dict(torch.load(weights_path)['state_dict'])
-    model = model.cuda()
-
-    utilities.set_logger(os.path.join('/scratch/image_datasets/3_65x65/ready/weights', model_version,
-                                      'hpatches_benchmarking_' + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + '.log'))
-
-    use_wandb = False
-    wandb_run = None
-    if use_wandb:
-        wandb.login()
-        wandb_run = wandb.init(project="temp")
-        wandb.watch(model)
-
-    # for i in range(10):
-    hpatches_benchmark_a_model(model, model_version, use_wandb)
-
-    if use_wandb:
-        wandb_run.finish()
 

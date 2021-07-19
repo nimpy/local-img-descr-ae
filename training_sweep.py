@@ -1,4 +1,4 @@
-"""Train the model"""
+"""Train the model within a W+B sweep"""
 
 import argparse
 import logging
@@ -13,9 +13,9 @@ from tqdm import tqdm
 import datetime
 from pathlib import Path
 
-import sys
-sys.path.append('/scratch/cloned_repositories/torch-summary')
-from torchsummary import summary
+# import sys
+# sys.path.append('/scratch/cloned_repositories/torch-summary')
+# from torchsummary import summary
 
 import wandb
 
@@ -74,8 +74,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
             else:
                 output_batch = model(train_batch)
                 loss = loss_fn(output_batch, train_batch)
-            # pdb.set_trace()
-
 
             # clear previous gradients, compute gradients of all variables wrt loss
             optimizer.zero_grad()
@@ -86,9 +84,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
 
             # Evaluate summaries only once in a while
             if i % params.save_summary_steps == 0:
-                # extract data from torch Variable, move to cpu, convert to numpy arrays
-                # output_batch = output_batch.data.cpu().numpy()
-
                 # compute all metrics on this batch
                 summary_batch = {metric: metrics[metric](output_batch, train_batch)
                                  for metric in metrics}
@@ -100,8 +95,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
 
             t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
             t.update()
-
-    # pdb.set_trace()
 
     # compute mean of all metrics in summary
     metrics_mean = {metric: np.mean([x[metric]
@@ -147,10 +140,6 @@ def evaluate_epoch(model, loss_fn, dataloader, metrics, params):
             output_batch = model(data_batch)
             loss = loss_fn(output_batch, data_batch)
 
-        # extract data from torch Variable, move to cpu, convert to numpy arrays
-        # output_batch = output_batch.data.cpu().numpy()
-        # data_batch = data_batch.data.cpu().numpy()
-
         # compute all metrics on this batch
         summary_batch = {metric: metrics[metric](output_batch, data_batch)
                          for metric in metrics}
@@ -166,7 +155,7 @@ def evaluate_epoch(model, loss_fn, dataloader, metrics, params):
     return metrics_mean
 
 
-def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params, model_dir,
+def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, metrics, params,
                        weights_dir, restore_file=None, use_wandb=True):
     """Train the model and evaluate every epoch.
 
@@ -178,7 +167,6 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         loss_fn: a function that takes batch_output and batch_labels and computes the loss for the batch
         metrics: (dict) a dictionary of functions that compute a metric using the output and labels of each batch
         params: (Params) hyperparameters
-        model_dir: (string) directory containing config and log
         weights_dir: (string) directory containing weights
         restore_file: (string) optional- name of file to restore from (without its extension .pth.tar)
     """
@@ -231,7 +219,6 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
 
 
 def training_sweep():
-# if __name__ == '__main__':
 
     # Load the parameters from json file
     args = parser.parse_args()
@@ -245,7 +232,6 @@ def training_sweep():
 
     if use_wandb:
         wandb_run = wandb.init(config=params)  # TODO wandb project name should be a parameter
-        # wandb.watch(model)
 
     logging.info("\n\n****************** STARTING A NEW RUN ******************")
     logging.info('Data augmentation level: ' + str(wandb.config.data_augm_level))
@@ -270,16 +256,13 @@ def training_sweep():
     if params.cuda:
         torch.cuda.manual_seed(230)
 
-    sweep_version = 'sweep_XXXX'  # 'sweep_3rd_vae_latent32_batch32'  # TODO change in both files!!! TODO make it a param passed to a sweep agent
+    sweep_version = 'sweep_XXXX'  # TODO change in both files!!! (TODO make it a parameter)
     weights_filename_suffix = 'vae' if params.variational else 'ae'
     model_version = "weights_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + weights_filename_suffix
     weights_dir = os.path.join(args.weights_dir, sweep_version, model_version)
 
     Path(os.path.join(args.weights_dir, sweep_version)).mkdir(parents=True, exist_ok=True)
     Path(weights_dir).mkdir(parents=True, exist_ok=True)
-
-    # # Set the logger
-    # utilities.set_logger(os.path.join(weights_dir, 'train.log'))
 
     rotation_deg = 10 * wandb.config.data_augm_level
     translation = 0.1 * wandb.config.data_augm_level
@@ -311,7 +294,7 @@ def training_sweep():
 
     # print(model)
     # summary(model, (1, 64, 64))
-    optimizer = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)  # TODO params.learning_rate ?
+    optimizer = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
 
     loss_fn = model.loss
 
