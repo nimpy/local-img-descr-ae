@@ -3,7 +3,6 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
-import torch
 
 
 class PatchesDataset(Dataset):

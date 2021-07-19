@@ -10,9 +10,6 @@ import datetime
 import torch
 import torchvision.transforms as transforms
 
-# sys.path.append('/scratch/cloned_repositories/torch-summary')
-# from torchsummary import summary
-
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
@@ -22,6 +19,7 @@ import models.vae as vae
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 
+
 def pickle_vars(query_stride, compare_stride, nr_similar_patches, vae_version, mses, ssims, psnrs):
     pickle_file_path = '/home/niaki/temp/20201214_VAE_experiments_zimnica/pickled_vars_' + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + '.pickle'
     try:
@@ -29,14 +27,6 @@ def pickle_vars(query_stride, compare_stride, nr_similar_patches, vae_version, m
     except Exception as e:
         print("Problem while trying to pickle: ", str(e))
 
-# def calculate_psnr(img1, img2, max_value=1.0):
-#     """"Calculating peak signal-to-noise ratio (PSNR) between two images."""
-#     mse = np.mean((np.array(img1, dtype=np.float32) - np.array(img2, dtype=np.float32)) ** 2)
-#     if mse == 0:
-#         return 100
-#     return 20 * np.log10(max_value / (np.sqrt(mse)))
-
-# psnr = calculate_psnr
 
 def compute_descriptor(descr, patch):
     if descr == model_vae:
@@ -45,6 +35,7 @@ def compute_descriptor(descr, patch):
         return encoding
     else:
         raise Exception("This descriptor not supported!")
+
 
 def calculate_SSDs_for_descr(image, patch_size=65, query_stride=65, compare_stride=65, nr_similar_patches=6, eps=0.0001):
 
@@ -92,7 +83,6 @@ def calculate_SSDs_for_descr(image, patch_size=65, query_stride=65, compare_stri
 
                     compare_patch_descr = compute_descriptor(model_vae, compare_patch)
 
-                    # diff = mse(query_patch_descr, compare_patch_descr)
                     diff = mse(query_patch_descr.detach().cpu().numpy(), compare_patch_descr.detach().cpu().numpy())
 
                     if diff < eps or (y_query == y_compare and x_query == x_compare):
@@ -146,7 +136,7 @@ def calculate_SSDs_for_descr(image, patch_size=65, query_stride=65, compare_stri
 
             diff_ssim = ssim(query_patch, compare_patch, data_range=dr_max - dr_min)
             ssims.append(diff_ssim)
-            diff_psnr = psnr(query_patch, compare_patch)#, data_range=dr_max - dr_min)
+            diff_psnr = psnr(query_patch, compare_patch)
             psnrs.append(diff_psnr)
 
     mses = np.array(mses)
@@ -175,20 +165,12 @@ vae_version = 'vae_20201213_102539'
 
 args = parser.parse_args()
 weights_path = os.path.join(args.weights_dir, vae_version, 'best.pth.tar')
-# data_dir = '/scratch/image_datasets/3_65x65/ready/'
 json_path = os.path.join(args.model_dir, 'params.json')
 
 model_vae = vae.BetaVAE(128)
 model_vae.load_state_dict(torch.load(weights_path)['state_dict'])
 model_vae.eval()
 model_vae = model_vae.cuda()
-
-# summary(model_vae, (1, 64, 64))
-
-# params = utils.Params(json_path)
-# params.cuda = torch.cuda.is_available()  # use GPU if available
-# dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
-# test_dl = dataloaders['test']
 
 image = PIL.Image.open('/home/niaki/Downloads/ViandenCastle_autumm-1-von-1-scaled_gray.jpg')
 
@@ -210,4 +192,3 @@ with open('/home/niaki/temp/20201214_VAE_experiments_zimnica/' + vae_version + '
     the_file.write('MSEs  ' + str(np.mean(mses)) + '\n')
     the_file.write('SSIMs ' + str(np.mean(ssims)) + '\n')
     the_file.write('PSNRs  ' + str(np.mean(psnrs)) + '\n')
-# pdb.set_trace()
