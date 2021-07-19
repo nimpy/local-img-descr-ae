@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-import pdb
 
 import sys
 sys.path.append('/scratch/cloned_repositories/pytorch-msssim')
@@ -18,13 +17,10 @@ class BetaVAE(nn.Module):
         # encoder layers
         self.zeropad1 = nn.ZeroPad2d(1)
         self.conv1 = nn.Conv2d(1, 32, 3, padding=0)
-        # self.pool1 = nn.MaxPool2d(2, 2)
         self.zeropad2 = nn.ZeroPad2d(1)
         self.conv2 = nn.Conv2d(32, 32, 3, padding=0)
-        # self.pool2 = nn.MaxPool2d(2, 2)
         self.zeropad3 = nn.ZeroPad2d(1)
         self.conv3 = nn.Conv2d(32, 32, 3, padding=0)
-        # self.pool3 = nn.MaxPool2d(2, 2)
         self.pool_big = nn.MaxPool2d(8, 8)
 
         self.fc_mu = nn.Linear(2048, latent_size)
@@ -52,11 +48,8 @@ class BetaVAE(nn.Module):
 
     def encode(self, x):
         x = self.activation(self.conv1(self.zeropad1(x)))
-        # x = self.pool1(x)
         x = self.activation(self.conv2(self.zeropad2(x)))
-        # x = self.pool2(x)
         x = self.activation(self.conv3(self.zeropad3(x)))
-        # x = self.pool3(x)
         x = self.pool_big(x)
 
         x = x.view(-1, 2048)

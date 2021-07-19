@@ -13,11 +13,9 @@ from tqdm import tqdm
 import datetime
 from pathlib import Path
 
-import sys
-sys.path.append('/scratch/cloned_repositories/torch-summary')
-from torchsummary import summary
-sys.path.append('/scratch/cloned_repositories/pytorch-msssim')
-from pytorch_msssim import msssim
+# import sys
+# sys.path.append('/scratch/cloned_repositories/torch-summary')
+# from torchsummary import summary
 
 import wandb
 
@@ -26,7 +24,7 @@ import models.ae as ae
 import models.vae as vae
 import models.ae_ir as ae_ir
 import data_loader as data_loader
-from metrics import metrics  # TODO
+from metrics import metrics
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/scratch/image_datasets/3_65x65/ready',
@@ -76,7 +74,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
             else:
                 output_batch = model(train_batch)
                 loss = loss_fn(output_batch, train_batch)
-            # pdb.set_trace()
 
 
             # clear previous gradients, compute gradients of all variables wrt loss
@@ -88,9 +85,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
 
             # Evaluate summaries only once in a while
             if i % params.save_summary_steps == 0:
-                # extract data from torch Variable, move to cpu, convert to numpy arrays
-                # output_batch = output_batch.data.cpu().numpy()
-
                 # compute all metrics on this batch
                 summary_batch = {metric: metrics[metric](output_batch, train_batch)
                                  for metric in metrics}
@@ -103,7 +97,6 @@ def train_epoch(model, optimizer, loss_fn, dataloader, metrics, params):
             t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
             t.update()
 
-    # pdb.set_trace()
 
     # compute mean of all metrics in summary
     metrics_mean = {metric: np.mean([x[metric]
@@ -148,10 +141,6 @@ def evaluate_epoch(model, loss_fn, dataloader, metrics, params):
         else:
             output_batch = model(data_batch)
             loss = loss_fn(output_batch, data_batch)
-
-        # extract data from torch Variable, move to cpu, convert to numpy arrays
-        # output_batch = output_batch.data.cpu().numpy()
-        # data_batch = data_batch.data.cpu().numpy()
 
         # compute all metrics on this batch
         summary_batch = {metric: metrics[metric](output_batch, data_batch)
@@ -278,26 +267,17 @@ if __name__ == '__main__':
     loss_str = 'msssim'
     params.vae_beta_norm = 0.00001
 
-    # if params.variational:
-    #     params.beta = params.vae_beta_norm * (4096 / params.latent_size)  # input size / latent size = 4096 / latent_size; TODO generalise it
-    #     model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta)
-    # else:
-    #     model = ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
+    if params.variational:
+        params.beta = params.vae_beta_norm * (4096 / params.latent_size)  # input size / latent size = 4096 / latent_size; TODO generalise it
+        model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str, beta=params.beta)
+    else:
+        model = ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
 
-    # model = ae_ir.AE_IR(latent_size=params.latent_size, activation_str=activation_str,
-    #               loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size,
-    #               activation_str=activation_str, loss_str=loss_str)
-
-    params.beta = params.vae_beta_norm * (4096 / params.latent_size)
-    model = vae.BetaVAE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str,
-                        beta=params.beta).cuda() if params.cuda else vae.BetaVAE(latent_size=params.latent_size,
-                                                                                 activation_str=activation_str,
-                                                                                 loss_str=loss_str, beta=params.beta)
-
+        # model = ae_ir.AE_IR(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str).cuda() if params.cuda else ae.AE(latent_size=params.latent_size, activation_str=activation_str, loss_str=loss_str)
 
 
     # print(model)
-    summary(model, (1, 64, 64))
+    # summary(model, (1, 64, 64))
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
     use_wandb = False
